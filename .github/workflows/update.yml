@@ -21,7 +21,10 @@ permissions:
   contents: write           # 需要提交产物
 
 concurrency:
-  group: update
+  # ⚠️ 这个组名必须和 fleet.yml 里的【一模一样】—— 见那边的注释。
+  # 两条工作流都往 main 推提交，同名才能互相排队；否则会撞成
+  # "Commit if changed 失败"（构建全绿、只有推送被拒，最容易误判）。
+  group: main-write
   cancel-in-progress: false
 
 jobs:
