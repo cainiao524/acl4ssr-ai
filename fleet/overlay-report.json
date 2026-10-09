@@ -4,7 +4,8 @@
     "💬 Ai平台",
     "🎮 游戏下载",
     "🎮 游戏平台",
-    "🐟 漏网之鱼"
+    "🐟 漏网之鱼",
+    "🇯🇵 日本节点"
   ],
   "added_groups": [
     "🔒 AI专用",
@@ -19,6 +20,6 @@
   "anchored_rulesets": 2,
   "base_group_count": 33,
   "output": "patched.ini",
-  "output_bytes": 12509,
+  "output_bytes": 12455,
   "output_lines": 125
 }

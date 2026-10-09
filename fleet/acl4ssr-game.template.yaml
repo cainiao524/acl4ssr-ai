@@ -1,7 +1,7 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-10-09T09:10:25Z
+# 生成时间(UTC): 2026-10-09T09:17:54Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
 # 策略组 35 个 / 节点 2 个 / 规则 10960 条（规则与节点均为内联，无在线依赖）
@@ -122,14 +122,11 @@ proxies:
 # 策略组全部来自 ini 的 custom_proxy_group（含 url-test 参数）
 proxy-groups:
   - name: "🇯🇵 日本节点"
-    type: url-test
-    url: "http://www.gstatic.com/generate_204"
-    interval: 300
-    tolerance: 50
+    type: select
+    lazy: true
     proxies:
       - "🇯🇵 日本 xtls-reality"
       - "🇯🇵 日本 hysteria2"
-    filter: "(?i)(日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan)"
   - name: "♻️ 自动选择"
     type: url-test
     url: "http://www.gstatic.com/generate_204"
