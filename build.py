@@ -169,27 +169,24 @@ PINNED_GROUP_TEMPLATE = (
 )
 AUTO_SELECT_GROUPS = ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡")
 
-# ── Steam 全部改直连：本机（VPS）只服务 AI 站点 ─────────────────────────────
+# ── Steam：下载直连、商店/社区/登录走节点 ───────────────────────────────────
 #
-# 上游三个 Steam 组里，「🎮 游戏下载」和「🎮 游戏平台」本身就是 DIRECT 优先，
-# 但「🎮 Steam 商店/社区」的首位是「🚀 节点选择」—— 默认走代理。
-# 于是 store / community / 以及被它吞掉的 login.* 都会走自建 VPS。
+# 上游三个 Steam 组里，「🎮 游戏下载」和「🎮 游戏平台」本就是 DIRECT 优先，
+# 这里把它们钉死不再变；「🎮 Steam 商店/社区」的「🚀 节点选择」**刻意保留** ——
+# store.steampowered.com / steamcommunity.com 在国内基本打不开，不给节点就没法用。
 #
-# 明确取舍：**Steam 一律不碰 VPS**。
-#   为什么：① 不占 VPS 流量；② Steam 看到的是国区 IP，和账号地区一致；
-#           ③ VPS 的定位是"给 AI 站点用的固定出口"，混进游戏流量没好处。
-#   代价：store.steampowered.com / steamcommunity.com 在国内常常打不开 ——
-#         届时在客户端里把该组切到「🚀 节点选择」即可（保留可选项）。
+# 所以别把商店组改成 DIRECT：那不是"Steam 不碰 VPS"，而是"商店打不开"。
+# 真正减少 Steam 占用 VPS 的是【下载】（本来就是 DIRECT）。
 STEAM_GROUPS = {
     "🎮 游戏下载": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
     "🎮 游戏平台": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
-    "🎮 Steam 商店/社区": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`",
 }
 
 # 「🔑 Steam 登录」—— 上游没有这个组，由本脚本新增。
-# 拆出来的目的不是"走哪个出口"，而是让登录**能在客户端里单独控制**。
-# 默认 DIRECT（见上面的取舍），保留手动切到节点的可能。
-STEAM_LOGIN_GROUP = "custom_proxy_group=🔑 Steam 登录`select`[]DIRECT`[]🔒 AI 专用"
+# 目的不是"换出口"，而是让登录**能在客户端里单独控制**：
+# 商店打不开时切节点、想让登录走国区 IP 时切 DIRECT，互不影响。
+# 默认与商店组一致（走节点），避免行为突变。
+STEAM_LOGIN_GROUP = "custom_proxy_group=🔑 Steam 登录`select`[]🚀 节点选择`[]DIRECT"
 STEAM_LOGIN_RULES = [
     "rules=DOMAIN,login.steampowered.com,🔑 Steam 登录",
     "rules=DOMAIN,api.steampowered.com,🔑 Steam 登录",
@@ -341,14 +338,13 @@ def apply_patch(text: str):
             pinned += 1
     report["auto_select_pinned"] = pinned
 
-    # ---- patch 7: Steam 全部改直连（VPS 只服务 AI 站点）---------------------
+    # ---- patch 7: Steam 下载钉死 DIRECT + 新增「🔑 Steam 登录」组 -----------
     #
-    # 上游「🎮 Steam 商店/社区」首位是「🚀 节点选择」= 默认走代理，
-    # 而它的 DOMAIN-SUFFIX,steampowered.com 连 login.* 一起吞掉。
-    # 这里把三个 Steam 组统一成 DIRECT 优先，并新增「🔑 Steam 登录」组 +
-    # 四条 DOMAIN 规则（DOMAIN 优先级高于 DOMAIN-SUFFIX，会先命中）。
+    #  下载/平台：DIRECT 优先（不占 VPS 流量，也不绕远路）
+    #  商店/社区：**不动** —— 上游的「🚀 节点选择」是对的，国内不给节点就打不开
+    #  登录：拆出独立组，默认跟商店组一致（走节点），但从此可单独控制
     #
-    # 缺组时 fail-closed：宁可报错，也不要静默留一份"Steam 偷偷走 VPS"的配置。
+    # 缺「游戏下载」时 fail-closed：宁可报错，也不要静默留一份下载走代理的配置。
     steam_replaced = 0
     for group_name, members in STEAM_GROUPS.items():
         pat = re.compile(r"^\s*custom_proxy_group\s*=\s*%s`" % re.escape(group_name))
@@ -356,7 +352,7 @@ def apply_patch(text: str):
         if not idxs:
             raise RuntimeError(
                 "找不到「%s」策略组定义，上游 ini 结构可能已变。\n"
-                "  Steam 组必须在，否则 Steam 流量会默认走代理。" % group_name
+                "  Steam 下载组必须在，否则下载会默认走代理吃流量。" % group_name
             )
         for i in idxs:
             kept[i] = "custom_proxy_group=%s`select`%s" % (group_name, members)
@@ -374,7 +370,7 @@ def apply_patch(text: str):
     for offset, rule in enumerate(STEAM_LOGIN_RULES):
         kept.insert(first_ruleset + offset, rule)
 
-    report["steam_groups_direct"] = steam_replaced
+    report["steam_download_direct"] = steam_replaced
     report["steam_login_group_added"] = True
 
     # ---- 加文件头横幅 ----
