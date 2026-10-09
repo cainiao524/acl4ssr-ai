@@ -263,35 +263,28 @@ jobs:
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ACL4SSR_Online_Full_ClaudeAI_MultiMode.ini STATUS.md
-          if git diff --cached --quiet; then
-            echo "产物无变化，跳过提交"
-            exit 0
-          fi
-          git commit -m "chore: 重新生成订阅配置 + 上游巡检（$(date -u +%Y-%m-%d)）"
-
-          # ── 并发安全 ────────────────────────────────────────────────────────
-          # 本工作流会被多个事件触发（schedule / push / workflow_dispatch）。
-          # 后启动的那次 checkout 到的是【它被触发那一刻】的 HEAD，而不是
-          # 轮到它执行时的 HEAD —— 中间若有另一次运行提交过，直接 push 就会被
-          # non-fast-forward 拒绝，整次运行标红。
-          #
-          # 实测就撞上一次：push 触发的运行先在 18:45:36 推送成功，
-          # workflow_dispatch 那次基于旧 HEAD 提交，push 报
-          #     ! [rejected] main -> main (fetch first)
-          #
-          # 这种失败没有任何信息价值，反而会掩盖真正的错误。
-          # 所以：先 fetch + merge 远端，再推送；失败重试 3 次。
-          #
-          # 用 -X ours 而不是 rebase：本仓库要提交的两个文件都是【生成物】，
-          # 两边内容都"对"，取哪边只影响时间戳。非冲突的远端改动
-          # （比如有人直接改了 README）仍会正常合并进来 —— 这比 -s ours 安全。
           BRANCH="${GITHUB_REF_NAME:-main}"
+
+          # ── 提交的是【生成物】，所以以远端 tip 为基准，只放上我们自己的产物 ───
+          # 旧写法是 `fetch + merge -X ours + push`，实测它会【静默卡死】：
+          #   merge 一旦失败，`|| git merge --abort` 把状态退回原样，
+          #   于是每次 push 都是 non-fast-forward —— 三次重试输出完全一样的三行
+          #   rejected，而 merge 的错误正好被 `>/dev/null 2>&1` 吞掉，
+          #   日志里根本看不出原因。这个坑让 CI 红了三次，每次都像真故障。
+          #
+          # 生成物本来就不需要合并语义：reset --mixed 让 HEAD 与 index 跟随远端、
+          # 工作区保留刚生成的内容，再 git add 我们自己的产物。这样这次提交必然
+          # 接在远端之后 => push 一定是 fast-forward；也不会把远端删掉的文件复活
+          #（因为 index 以远端为准，只有我们 add 的文件进这次提交）。
           for attempt in 1 2 3; do
-            if git fetch --quiet origin "$BRANCH"; then
-              git merge -X ours --no-edit FETCH_HEAD >/dev/null 2>&1 \
-                || git merge --abort >/dev/null 2>&1 || true
+            git fetch --quiet origin "$BRANCH"
+            git reset --mixed --quiet FETCH_HEAD
+            git add ACL4SSR_Online_Full_ClaudeAI_MultiMode.ini STATUS.md
+            if git diff --cached --quiet; then
+              echo "产物与远端一致，无需提交"
+              exit 0
             fi
+            git commit -m "chore: 重新生成订阅配置 + 上游巡检（$(date -u +%Y-%m-%d)）"
             if git push; then
               echo "推送成功（第 $attempt 次尝试）"
               exit 0
