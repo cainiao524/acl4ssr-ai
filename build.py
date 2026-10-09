@@ -155,6 +155,17 @@ AI_GROUP_REPLACEMENT = [
 SELF_REALITY_FILTER = r"(\[SELF\].*xtls-reality)"
 SELF_HYSTERIA2_FILTER = r"(\[SELF\].*hysteria2)"
 
+# 机场节点 = 名字里【不含】[SELF] 的。
+# `^(?!...)` 前瞻在 subconverter 的 std::regex（ECMAScript）和 mihomo 的 Go 正则里
+# 都成立 —— 自建那条线（assets/local-overlay.ini 的 3.7）已经用同一串跑在生产上。
+NOT_SELF_FILTER = r"(^(?!.*\[SELF\]).*)"
+
+# 机场的日本节点。前瞻把自建那两个排除掉，避免同一条节点在组里出现两次。
+# `JP` 这种短词做子串匹配容易误伤，所以实测过：在真实 48 个节点名上，
+# 这个模式和 (日本|🇯🇵)、(日本|🇯🇵|Japan|JP)、(日本|JP|jp|Japan) 的结果完全一致，
+# 都是恰好 20 个（自建 2 + 机场 18），没有多命中一个。
+JAPAN_REGION_FILTER = r"(^(?!.*\[SELF\]).*(日本|🇯🇵|Japan|JP))"
+
 # 「🇯🇵 日本节点」——自建节点的固定出口。
 #
 # ⚠️ 这里曾经是 `fallback` 主备切换（Hysteria2 优先、失效切 Reality）。
@@ -167,9 +178,37 @@ SELF_HYSTERIA2_FILTER = r"(\[SELF\].*hysteria2)"
 # ⚠️ 节点名的格式是 <地区> [SELF] <协议>，协议名必须在最后 ——
 #    机器侧 sing-box 内核靠"剥掉末尾协议名"反推节点名，顺序错了会造出
 #    "… hysteria2 [SELF] hysteria2" 这种脏名字。
+#
+# ⚠️ 机场的日本节点【也在这个组里】—— 但排在自建两个【之后】。
+#    这是有意的：`🇯🇵 日本节点` 不只是 AI 链路上的一环，它是 ACL4SSR 的
+#    【地区组】，另外 13 个组（油管/奈飞/国外媒体/漏网之鱼/Steam 商店…）都
+#    `[]🇯🇵 日本节点` 引用它。曾经把它写成"只有自建 2 个"，后果是那 13 个组
+#    一起失去了"选一个机场日本节点"的能力 —— 组名叫「日本节点」却一个机场
+#    日本节点都没有，是名不副实的陷阱。
+#
+#    为什么加回来不会让出口漂移（这是当初钉死它的理由，必须保住）：
+#      * 成员顺序 = 自建 Reality → 自建 Hysteria2 → 机场日本，
+#        而 select 组【首位即默认出口】=> 默认永远是自建 Reality；
+#      * 它是 `select`，不是 `url-test`/`fallback`/`load-balance`
+#        —— 没有任何"自己会换"的机制。
+#    即使 subconverter 换成按节点顺序展开，结果也一样：自建节点在订阅里就排在
+#    机场前面（输入 A 是 VPS，输入 B 是机场）。两种解释下首位都是自建 Reality。
 JAPAN_FALLBACK_GROUP = (
     "custom_proxy_group=🇯🇵 日本节点`select`"
-    "%s`%s" % (SELF_REALITY_FILTER, SELF_HYSTERIA2_FILTER)
+    "%s`%s`%s" % (SELF_REALITY_FILTER, SELF_HYSTERIA2_FILTER, JAPAN_REGION_FILTER)
+)
+
+# 自建 / 机场 两个显式入口（手动查看与切换用，【不被任何规则引用】）。
+#
+# 这条线比自建那条线更需要它们：产物里 2 个自建 + 46 个机场混在同一份订阅里，
+# 没有显式入口时只能从 48 项里靠名字认哪台是自己的机器 ——
+# 而"选错节点"的代价是 AI 出口 IP 漂到机场，那是账号风险，不是体验问题。
+#
+# 都是 `select`：不用 url-test/fallback/load-balance，避免"自己会换"。
+# 不被规则引用 => 即使其中一个为空，也不影响任何流量的走向。
+ISOLATION_GROUPS = (
+    "custom_proxy_group=🚀 自建节点`select`%s" % AI_NODE_FILTER,
+    "custom_proxy_group=✈️ 机场节点`select`%s" % NOT_SELF_FILTER,
 )
 
 # 「会自动挑节点」的三个组 —— 必须钉死在自建节点上。
@@ -376,6 +415,34 @@ def apply_patch(text: str):
             steam_replaced += 1
 
     report["steam_download_direct"] = steam_replaced
+
+    # ---- patch 8: 自建 / 机场 两个显式入口 --------------------------------
+    #
+    # 插在「🔒 AI 专用」之后：那一块本来就是"哪些节点是自己的"这个语义，
+    # 放一起最容易看懂，也离客户端 UI 顶部够近。
+    #
+    # 两个组都不被任何规则引用 —— 它们是手动入口，缺了不影响分流，
+    # 所以这里的失败语义是"报错并要求人工确认"，而不是静默生成一份
+    # 用户再也分不清自建/机场的配置。
+    existing_group_names = {
+        line.split("=", 1)[1].split("`", 1)[0]
+        for line in kept if line.startswith("custom_proxy_group=")
+    }
+    wanted_names = [g.split("=", 1)[1].split("`", 1)[0] for g in ISOLATION_GROUPS]
+    isolation_inserted = 0
+    if not existing_group_names.intersection(wanted_names):
+        anchor_re = re.compile(r"^\s*custom_proxy_group\s*=\s*🔒 AI 专用`")
+        anchor_idx = [i for i, line in enumerate(kept) if anchor_re.match(line)]
+        if not anchor_idx:
+            raise RuntimeError(
+                "找不到「🔒 AI 专用」组，无法在其后插入「🚀 自建节点 / ✈️ 机场节点」。\n"
+                "  这两个组是手动入口，缺了不影响分流，"
+                "但用户就只能从几十项里靠名字认哪台是自己的机器。"
+            )
+        for offset, group_line in enumerate(ISOLATION_GROUPS):
+            kept.insert(anchor_idx[0] + 1 + offset, group_line)
+            isolation_inserted += 1
+    report["isolation_groups_inserted"] = isolation_inserted
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)
