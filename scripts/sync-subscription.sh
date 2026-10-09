@@ -226,12 +226,17 @@ fi
 # ---------------------------------------------------------------------------
 # 5) 原子替换
 # ---------------------------------------------------------------------------
+# ⚠️ 「是否已是最新」用【逐字节内容比对】而不是 sha256 相等：
+#    sha 只回答"一不一样"，而我们要的是"线上那份是不是【本次校验过的】那一份"。
+#    这两者会分叉 —— 实测踩过：GitHub raw 的 CDN 缓存还没刷新时，脚本抓到的
+#    是上一版模板，于是 sha 与线上相等、报"无需替换"，而线上其实还是旧规则。
+#    内容比对 + 落盘后自证，才把"下发件 == 我校验过的件"这句话变成真的。
 NEW_SHA="$(sha256sum "$WORK/merged.yaml" | awk '{print $1}')"
 OLD_SHA=""
 [ -f "$OUT_YAML" ] && OLD_SHA="$(sha256sum "$OUT_YAML" | awk '{print $1}')"
 
-if [ "$NEW_SHA" = "$OLD_SHA" ] && [ "$FORCE" != "1" ]; then
-    log "线上产物与本次构建一致（sha256=${NEW_SHA:0:16}），无需替换"
+if [ "$FORCE" != "1" ] && [ -f "$OUT_YAML" ] && cmp -s "$WORK/merged.yaml" "$OUT_YAML"; then
+    log "线上产物与本次构建【逐字节一致】（sha256=${NEW_SHA:0:16}），无需替换"
     exit 0
 fi
 
@@ -251,9 +256,11 @@ cp -a "$WORK/merged.yaml" "$TMP_OUT"
 chmod 644 "$TMP_OUT"
 mv -f "$TMP_OUT" "$OUT_YAML"
 
-# 再校验一次落盘结果（防"写进去的不是我校验的那份"）
-FINAL_SHA="$(sha256sum "$OUT_YAML" | awk '{print $1}')"
-[ "$FINAL_SHA" = "$NEW_SHA" ] || die "落盘后 sha256 不符（${FINAL_SHA:0:16} != ${NEW_SHA:0:16}）—— 请检查磁盘"
+# 自证：落盘的那一份必须与【我刚刚校验过的那一份】逐字节相同。
+# 只比 sha 不够 —— cmp 能抓住"内容不同但长度/摘要恰好一致"以外的所有写入问题，
+# 也把"文件被别的东西同时改过"这种情况暴露出来。
+cmp -s "$WORK/merged.yaml" "$OUT_YAML" \
+    || die "落盘后内容与校验件不一致 —— 请检查磁盘或并发写入（线上可能已损坏，备份见 ${BACKUP_DIR}）"
 
 log "完成：$OUT_YAML 已更新（${OLD_SHA:0:16} -> ${NEW_SHA:0:16}，$(grep -cE '^  - "' "$OUT_YAML") 条规则）"
 exit 0
