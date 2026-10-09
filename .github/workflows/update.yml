@@ -111,6 +111,8 @@ jobs:
           SELF_ONLY = "[[]SELF[]]"
           AIRPORT_REGIONS = ["🇭🇰 香港节点", "🇨🇳 台湾节点", "🇸🇬 狮城节点",
                              "🇺🇲 美国节点", "🇰🇷 韩国节点"]
+          AI_PRIORITY = ("https://raw.githubusercontent.com/cainiao524/acl4ssr-ai/main/"
+                         "base/ai-priority.list")
 
           text = pathlib.Path("ACL4SSR_Online_Full_ClaudeAI_MultiMode.ini").read_text(encoding="utf-8")
           groups = {}
@@ -177,23 +179,34 @@ jobs:
               print("::error::「✈️ 机场节点」引用了「🇯🇵 日本节点」—— 那个组含自建节点，不再是机场入口")
               sys.exit(1)
 
-          # 「Ⓜ️ 微软服务」首位必须是节点组（上游是 []DIRECT）。
-          # 为什么这条很关键：OpenAI 有一批资产和实时通道跑在微软/Azure 主机名上
-          # （*.blob.core.windows.net / *.azureedge.net / *.webpubsub.azure.com），
-          # 它们的域名规则【声明在微软规则集之后】，会先被微软的宽泛后缀吃掉、
-          # 落进这一组 —— 所以这一组的首位就是那批域名的真实出口。
-          # 是 DIRECT 的话，ChatGPT 的文件存储与实时通道就走真实 IP，且毫无报错。
-          ms_key = next((n for n in groups if "微软服务" in n), None)
-          if ms_key is None:
-              print("::error::找不到「微软服务」策略组")
+          # 「AI 优先关键字」必须插在微软规则集【之前】。
+          # 为什么：OpenAI 有一批资产和实时通道跑在微软/Azure 的主机名上 ——
+          #   openaiapi-site.azureedge.net / *.blob.core.windows.net
+          #   production-openaicom-storage.azureedge.net
+          #   chatgpt-async-webps-prod-*.webpubsub.azure.com（实时/语音信令）
+          # 微软规则集（Microsoft.list → azure.com / windows.net / azureedge.net）
+          # 声明在 AI 规则集之前，先匹配者胜 => 这些域先落进「Ⓜ️ 微软服务」，
+          # 而那一组首位是 DIRECT，于是走真实 IP 且【毫无报错】。
+          # 只插 openai / chatgpt 两条关键字把那几个域拉回 AI 组，
+          # 微软其余流量（Windows Update / Office / Teams）保持直连。
+          raw_lines = text.splitlines()
+          pri_idx = [i for i, l in enumerate(raw_lines)
+                     if l.strip() == "ruleset=💬 Ai平台," + AI_PRIORITY]
+          ms_idx = [i for i, l in enumerate(raw_lines)
+                    if l.strip().startswith("ruleset=Ⓜ️ 微软")]
+          if not pri_idx:
+              print("::error::缺少 AI 优先关键字规则集 %s —— openai/chatgpt 会被微软规则抢先" % AI_PRIORITY)
               sys.exit(1)
-          if groups[ms_key][:2] != ["select", "[]🚀 节点选择"]:
-              print("::error::「%s」首位必须是 []🚀 节点选择，实际 %r"
-                    % (ms_key, groups[ms_key][:3]))
+          if not ms_idx:
+              print("::error::找不到 ruleset=Ⓜ️ 微软 开头的行，无法校验插入顺序")
+              sys.exit(1)
+          if pri_idx[0] > ms_idx[0]:
+              print("::error::AI 优先关键字（第 %d 行）排在微软规则集（第 %d 行）之后 —— "
+                    "那几个 OpenAI-on-Azure 域会直连真实 IP" % (pri_idx[0] + 1, ms_idx[0] + 1))
               sys.exit(1)
 
           print("通过：无前瞻、无写死自建节点名；日本节点含机场日本且自建在前；"
-                "两个隔离入口就位；微软服务首位已改为节点")
+                "两个隔离入口就位；AI 优先关键字排在微软规则之前")
           PY
 
       - name: Validate base
