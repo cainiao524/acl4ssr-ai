@@ -227,6 +227,32 @@ custom_proxy_group=🇯🇵 日本节点`select`[]🇯🇵 日本 [SELF] xtls-re
 > 见「🚀 自建节点 / ✈️ 机场节点」：转换线里自建与机场混在同一份订阅，
 > 所以额外给了两个显式入口，用来一眼分清哪些是自己的机器。
 
+> ⚠️ **「Ⓜ️ 微软服务」的首位已从 `[]DIRECT` 改成 `[]🚀 节点选择`。**
+>
+> 原因不是微软，是 **OpenAI 有一批资产和实时通道跑在微软/Azure 的主机名上**：
+>
+> | 域名 | 上游第一条命中 | 终点 |
+> |---|---|---|
+> | `openaiapi-site.azureedge.net` | `DOMAIN-SUFFIX,azureedge.net,Ⓜ️ 微软服务` | DIRECT |
+> | `openaiassets.blob.core.windows.net` | `DOMAIN-SUFFIX,windows.net,Ⓜ️ 微软服务` | DIRECT |
+> | `openaicomproductionae4b.blob.core.windows.net` | 同上 | DIRECT |
+> | `production-openaicom-storage.azureedge.net` | `azureedge.net` | DIRECT |
+> | `openaipublic.blob.core.windows.net` | `windows.net` | DIRECT |
+> | **`chatgpt-async-webps-prod-*.webpubsub.azure.com`** | `DOMAIN-SUFFIX,azure.com,Ⓜ️ 微软服务` | DIRECT |
+>
+> 最后一条是 **ChatGPT 的实时/语音（Realtime）信令通道** —— 也就是语音对话时真实 IP 直接暴露。
+> 根因是**顺序**：AI 的域名规则声明在微软规则集【之后】（rules[1886:] vs rules[1745:1843]），
+> 微软的宽泛后缀先把它们吃掉了。所以**任何落在微软/Azure 主机名上的 AI 域名都会静默直连**。
+>
+> 把「微软服务」首位换成 `[]🚀 节点选择` 就堵住这一类：
+> `Ⓜ️ 微软服务 → 🚀 节点选择 → ♻️ 自动选择 → 🇯🇵 日本 [SELF] xtls-reality`。
+> 只调换前两个成员，其余成员与顺序完全不动。
+>
+> **代价（要知道）**：Windows Update / Office / Teams 这类大流量也会默认走 VPS。
+> 若更在意流量，替代方案是给 `openai` / `chatgpt` 加两条前置关键字规则，
+> 只把那几个 OpenAI-on-Azure 域拉回 AI 组，微软其余流量保持直连 —— 两种都能堵漏，
+> 取舍只在流量。CI 里已断言「微软服务首位必须是 `[]🚀 节点选择`」。
+
 > ⚠️⚠️ **转换线里【不许写前瞻】`(?!...)` —— 这个坑很贵，记在这里。**
 >
 > 这个转换站实际跑的是 **`subconverter-ng`**（从它的报错页头 `# subconverter-ng:`
