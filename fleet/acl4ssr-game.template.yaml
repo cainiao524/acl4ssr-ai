@@ -1,7 +1,7 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-10-09T12:42:29Z
+# 生成时间(UTC): 2026-10-09T13:19:20Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
 # 策略组 36 个 / 节点 2 个 / 规则 10957 条（规则与节点均为内联，无在线依赖）
