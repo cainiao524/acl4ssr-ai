@@ -423,25 +423,29 @@ jobs:
           set -euo pipefail
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$OUT_DIR"
-          if git diff --cached --quiet; then
-            echo "产物无变化，跳过提交"
-            exit 0
-          fi
-          git commit -m "chore(fleet): 重新构建机器侧订阅产物（$(date -u +%Y-%m-%d)）"
-
-          # ── 并发安全 ──────────────────────────────────────────────────────
-          # 本工作流被 schedule / push / workflow_dispatch 多个事件触发。
-          # 后启动的那次 checkout 到的是【它被触发那一刻】的 HEAD，而不是轮到它
-          # 执行时的 HEAD —— 中间若有另一次运行提交过，直接 push 会被
-          # non-fast-forward 拒绝，整次运行标红，而这种失败没有任何信息价值。
-          # 用 -X ours 而不是 rebase：提交的都是【生成物】，两边内容都"对"。
           BRANCH="${GITHUB_REF_NAME:-main}"
+
+          # ── 提交的是【生成物】，所以以远端 tip 为基准，只放上我们自己的产物 ───
+          # 旧写法是 `fetch + merge -X ours + push`，实测它会【静默卡死】：
+          #   merge 一旦失败，`|| git merge --abort` 把状态退回原样，
+          #   于是每次 push 都是 non-fast-forward —— 三次重试输出完全一样的三行
+          #   rejected，而 merge 的错误正好被 `>/dev/null 2>&1` 吞掉，
+          #   日志里只能看到三行同样的 rejected，完全看不出原因。
+          #   （实测日志：commit 成功 4 files changed，紧接着连续三次
+          #     `! [rejected] main -> main (non-fast-forward)`。）
+          #
+          # 生成物本来就不需要合并语义：reset --mixed 让 HEAD 与 index 跟随远端、
+          # 工作区保留刚构建的内容，再 git add 我们自己的产物。这样这次提交必然
+          # 接在远端之后 => push 一定是 fast-forward；也不会把远端删掉的文件复活。
           for attempt in 1 2 3; do
-            if git fetch --quiet origin "$BRANCH"; then
-              git merge -X ours --no-edit FETCH_HEAD >/dev/null 2>&1 \
-                || git merge --abort >/dev/null 2>&1 || true
+            git fetch --quiet origin "$BRANCH"
+            git reset --mixed --quiet FETCH_HEAD
+            git add "$OUT_DIR"
+            if git diff --cached --quiet; then
+              echo "产物与远端一致，无需提交"
+              exit 0
             fi
+            git commit -m "chore(fleet): 重新构建机器侧订阅产物（$(date -u +%Y-%m-%d)）"
             if git push; then
               echo "推送成功（第 $attempt 次尝试）"
               exit 0
