@@ -95,18 +95,28 @@ class JapanGroupTests(unittest.TestCase):
         for flapping in ('`fallback`', '`url-test`', '`load-balance`'):
             self.assertNotIn(flapping, build.JAPAN_FALLBACK_GROUP)
 
-    def test_japan_region_filter_selects_airport_japan_not_self_hosted(self):
-        """地区过滤器：命中机场日本节点，且把自建那两个排除掉（否则成员重复）。"""
+    def test_japan_region_filter_is_positive_and_overlaps_on_purpose(self):
+        """地区过滤器必须是【正向】的，并且会命中自建节点 —— 这是有意的。
+
+        ⚠️ 别"优化"成 `^(?!.*\\[SELF\\]).*`（先把自建排除掉）：
+           subconverter-ng 不支持前瞻，实测匹配 0 个节点，
+           而失败方式是静默的 —— select 组退化成 [DIRECT]，配置照样能加载。
+        重叠不会造成重复：实测转换站会去重，最终 20 个成员、0 重复。
+        """
         rx = re.compile(build.JAPAN_REGION_FILTER)
-        airport_jp = ("🇯🇵 日本S01 | IEPL", "🇯🇵 日本S05 | 下载专用 | x0.01",
-                      "🇯🇵 免费-日本1-Ver.7", "🇯🇵 [SS] 日本S02 | IEPL")
-        for name in airport_jp:
+        # 正向：不能含任何前瞻
+        self.assertNotIn("(?!", build.JAPAN_REGION_FILTER)
+        # 机场日本节点必须命中
+        for name in ("🇯🇵 日本S01 | IEPL", "🇯🇵 日本S05 | 下载专用 | x0.01",
+                     "🇯🇵 免费-日本1-Ver.7", "🇯🇵 [SS] 日本S02 | IEPL"):
             self.assertTrue(rx.search(name), "机场日本节点没被命中：%r" % name)
+        # 自建节点也会被命中（同含「日本」）—— 靠转换站去重，不靠前瞻
         for name in ("🇯🇵 日本 [SELF] xtls-reality",
-                     "🇯🇵 [VLESS] 日本 [SELF] xtls-reality",
-                     "🇯🇵 日本 [SELF] hysteria2",
-                     "🇭🇰 香港S01", "🇸🇬 新加坡S01 | IEPL | x2",
-                     "🇺🇸 美国S01 | IEPL | x1.5", "🇰🇷 韩国S01"):
+                     "🇯🇵 [VLESS] 日本 [SELF] xtls-reality"):
+            self.assertTrue(rx.search(name), "自建节点应当被命中（随后去重）：%r" % name)
+        # 别的地区不能被误伤
+        for name in ("🇭🇰 香港S01", "🇸🇬 新加坡S01 | IEPL | x2",
+                     "🇺🇸 美国S01 | IEPL | x1.5", "🇰🇷 韩国S01", "🇹🇷 土耳其S01"):
             self.assertFalse(rx.search(name), "不该命中：%r" % name)
 
     def test_auto_select_groups_pinned_to_self_hosted(self):
@@ -214,13 +224,43 @@ class IsolationGroupTests(unittest.TestCase):
                 self.assertNotIn(flapping, g)
 
     def test_isolation_groups_use_filters_not_hardcoded_names(self):
-        """成员得是过滤器/归属标识，不能写死节点名（转换站会改名）。"""
+        """成员得是过滤器/组引用，不能写死节点名（转换站会改名）。"""
+        # 自建那一侧：用归属标识过滤器
         self.assertIn(build.AI_NODE_FILTER, build.ISOLATION_GROUPS[0])
-        self.assertIn(build.NOT_SELF_FILTER, build.ISOLATION_GROUPS[1])
         for g in build.ISOLATION_GROUPS:
             for member in g.split("`")[2:]:
                 self.assertFalse(member.startswith("[]") and "SELF" in member,
                                  "写死了自建节点名：%r" % member)
+
+    def test_airport_entry_references_region_groups_and_excludes_japan(self):
+        """机场那一侧引用【只含机场节点】的地区组。
+
+        为什么不用 `^(?!.*\\[SELF\\]).*`：subconverter-ng 不支持前瞻，实测匹配 0 个，
+        组会静默退化成 [DIRECT]。为什么不用 `!!GROUPID=1`：同样实测无效，
+        而且把语义绑在订阅顺序上。
+        为什么不引用「🇯🇵 日本节点」：它【同时含自建节点】，放进来就不再是"机场那一侧"。
+        """
+        g = build.ISOLATION_GROUPS[1]
+        for name in build.AIRPORT_REGION_GROUPS:
+            self.assertIn("[]" + name, g)
+        self.assertNotIn("[]🇯🇵 日本节点", g, "「日本节点」含自建节点，不能算机场入口")
+        self.assertNotIn("(?!", g)
+
+    def test_no_lookahead_anywhere_in_group_definitions(self):
+        """禁止前瞻 —— 它的失败方式是【静默】的，必须钉成断言。
+
+        实测：`(^(?!.*\\[SELF\\]).*)` 和 `(^(?!.*SELF).*)` 都匹配 0 个节点；
+        而 subconverter 官方 README 里写着前瞻可用 —— 所以不能照文档推断。
+        一个匹配 0 个的 select 组会退化成 `[DIRECT]`：配置能加载、看着正常，
+        实际上整个组废掉，而且没有任何报错。
+        """
+        output, _ = build.apply_patch(fixture())
+        for line in output.splitlines():
+            if line.startswith("custom_proxy_group="):
+                self.assertNotIn("(?!", line, "组定义里出现前瞻：%r" % line)
+        for const in (build.SELF_REALITY_FILTER, build.SELF_HYSTERIA2_FILTER,
+                      build.JAPAN_REGION_FILTER, build.AI_NODE_FILTER):
+            self.assertNotIn("(?!", const, "常量里出现前瞻：%r" % const)
 
     def test_isolation_groups_are_placed_right_after_the_ai_group(self):
         output, _ = build.apply_patch(fixture())
