@@ -15,14 +15,11 @@ import build
 SELF_REALITY_NAME = "🇯🇵 日本 [SELF] xtls-reality"
 
 
-MS_DEFAULT_LINE = (
-    "custom_proxy_group=%s`select`[]DIRECT`[]🚀 节点选择"
-    "`[]🇺🇲 美国节点`[]🇭🇰 香港节点`[]🚀 手动切换" % build.MICROSOFT_SERVICE_GROUP
-)
+MS_RULESET_LINE = "ruleset=Ⓜ️ 微软服务,https://example.com/Microsoft.list"
 
 
 def fixture(with_japan=True, with_auto=True, with_steam=True,
-            with_ms=True, ms_line=None):
+            with_ms_ruleset=True, ms_ruleset_line=None):
     lines = [
         '[custom]',
         build.ANCHOR,
@@ -31,9 +28,10 @@ def fixture(with_japan=True, with_auto=True, with_steam=True,
         'ruleset=🎮 Steam 商店/社区,https://example.com/web.list',
         ';clash_rule_base=https://example.com/base.yaml',
     ]
-    # 上游形态：微软服务的首位是 []DIRECT（这正是要改掉的那一点）
-    if with_ms:
-        lines.append(ms_line or MS_DEFAULT_LINE)
+    # 上游形态：微软规则集声明在 AI 锚点【之前】—— 这正是 openai/chatgpt
+    # 会被 azure.com / windows.net / azureedge.net 抢先的原因。
+    if with_ms_ruleset:
+        lines.insert(1, ms_ruleset_line or MS_RULESET_LINE)
     if with_japan:
         lines.insert(3, 'custom_proxy_group=🇯🇵 日本节点`url-test`日本`http://example.com`300')
     if with_auto:
@@ -290,54 +288,52 @@ class IsolationGroupTests(unittest.TestCase):
             self.assertEqual(users, [], "「%s」被引用了，空组时会连带出错" % name)
 
 
-class MicrosoftServiceDefaultTests(unittest.TestCase):
-    """「Ⓜ️ 微软服务」的默认出口必须是节点，不能是 DIRECT。
+class AiPriorityKeywordTests(unittest.TestCase):
+    """把落在微软/Azure 主机名上的 OpenAI 域拉回 AI 组。
 
-    上游是 `[]DIRECT` 在首位。问题在于 OpenAI 有一批资产和实时通道跑在
-    微软/Azure 的主机名上：
+    微软规则集（Microsoft.list → azure.com / windows.net / azureedge.net）
+    声明在 AI 规则集【之前】，先匹配者胜 => 这些域会先被微软吃掉、
+    落进「Ⓜ️ 微软服务」，而那一组首位是 DIRECT —— 于是 ChatGPT 的文件存储
+    与实时/语音信令走真实 IP，且毫无报错。
 
-        openaiapi-site.azureedge.net
-        openaiassets.blob.core.windows.net / openaicomproductionae4b.blob...
-        production-openaicom-storage.azureedge.net
-        chatgpt-async-webps-prod-*.webpubsub.azure.com   ← ChatGPT 实时/语音信令
-
-    这些域名规则【声明在微软规则集之后】，会先被微软的宽泛后缀
-    （azure.com / windows.net / azureedge.net）吃掉，落进这一组 ——
-    所以这一组的默认出口，就是那批域名的真实出口。
-    它要是 DIRECT，ChatGPT 的文件存储和实时通道就走真实 IP，而且毫无报错。
+    修法是最前面插一个只含 openai / chatgpt 两条关键字的规则集：
+    只动那几个域，微软其余流量（Windows Update / Office / Teams）保持直连。
     """
 
-    def test_first_member_is_node_selection_not_direct(self):
+    SIX = (
+        "openaiapi-site.azureedge.net",
+        "openaiassets.blob.core.windows.net",
+        "openaicomproductionae4b.blob.core.windows.net",
+        "production-openaicom-storage.azureedge.net",
+        "openaipublic.blob.core.windows.net",
+        "chatgpt-async-webps-prod-us-east-1.webpubsub.azure.com",
+    )
+
+    def test_priority_ruleset_sorted_before_microsoft(self):
         output, report = build.apply_patch(fixture())
-        self.assertTrue(report['ms_service_default_proxy'])
-        line = next(l for l in output.splitlines()
-                    if l.startswith("custom_proxy_group=" + build.MICROSOFT_SERVICE_GROUP + "`"))
-        parts = line.split("`")
-        self.assertEqual(parts[1], "select")
-        self.assertEqual(parts[2], build.MICROSOFT_DEFAULT_MEMBER,
-                         "首位必须是 %s" % build.MICROSOFT_DEFAULT_MEMBER)
-        self.assertNotEqual(parts[2], "[]DIRECT", "首位不能还是 DIRECT")
+        self.assertTrue(report['ai_priority_ruleset'].startswith("inserted-before"),
+                        report['ai_priority_ruleset'])
+        lines = output.splitlines()
+        pri = next(i for i, l in enumerate(lines)
+                   if l.strip() == "ruleset=💬 Ai平台,%s" % build.AI_PRIORITY_LIST)
+        ms = next(i for i, l in enumerate(lines)
+                  if l.strip().startswith(build.MICROSOFT_RULESET_PREFIX))
+        self.assertLess(pri, ms, "AI 优先规则集必须排在微软规则集【之前】")
 
-    def test_only_the_first_two_members_are_swapped(self):
-        """只调换前两个成员：其余成员及其相对顺序必须原样保留。"""
-        output, _ = build.apply_patch(fixture())
-        line = next(l for l in output.splitlines()
-                    if l.startswith("custom_proxy_group=" + build.MICROSOFT_SERVICE_GROUP + "`"))
-        self.assertEqual(
-            line,
-            MS_DEFAULT_LINE.replace("[]DIRECT`[]🚀 节点选择", "[]🚀 节点选择`[]DIRECT"),
-        )
+    def test_priority_list_actually_covers_all_six_domains(self):
+        """逐个验那 6 个域都被关键字覆盖 —— 不靠"看起来对"。"""
+        text = (ROOT / "base" / "ai-priority.list").read_text(encoding="utf-8")
+        kws = [l.split(",", 1)[1].strip() for l in text.splitlines()
+               if l.startswith("DOMAIN-KEYWORD,")]
+        self.assertTrue(kws, "优先规则集里没有 DOMAIN-KEYWORD")
+        for d in self.SIX:
+            self.assertTrue(any(k in d for k in kws),
+                            "%s 没有任何关键字能命中（关键字=%r）" % (d, kws))
 
-    def test_missing_group_fails_closed(self):
-        with self.assertRaisesRegex(RuntimeError, '微软服务'):
-            build.apply_patch(fixture(with_ms=False))
-
-    def test_missing_member_fails_closed(self):
-        """成员不在时【必须报错】—— 静默跳过等于留一份域名单仍直连的配置。"""
-        no_member = ("custom_proxy_group=%s`select`[]DIRECT`[]🚀 手动切换"
-                     % build.MICROSOFT_SERVICE_GROUP)
-        with self.assertRaisesRegex(RuntimeError, '没有成员'):
-            build.apply_patch(fixture(ms_line=no_member))
+    def test_missing_microsoft_ruleset_fails_closed(self):
+        """找不到微软规则集必须报错 —— 静默跳过就等于留一份域名单仍直连的配置。"""
+        with self.assertRaisesRegex(RuntimeError, '微软'):
+            build.apply_patch(fixture(with_ms_ruleset=False))
 
 
 class ConverterRenameImmunityTests(unittest.TestCase):
