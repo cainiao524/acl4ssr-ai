@@ -107,9 +107,10 @@ jobs:
           BT = "`"
           REALITY = r"(\[SELF\].*xtls-reality)"
           HYST = r"(\[SELF\].*hysteria2)"
-          NOT_SELF = r"(^(?!.*\[SELF\]).*)"
-          JAPAN = r"(^(?!.*\[SELF\]).*(日本|🇯🇵|Japan|JP))"
+          JAPAN = r"(日本|🇯🇵|Japan|JP)"
           SELF_ONLY = "[[]SELF[]]"
+          AIRPORT_REGIONS = ["🇭🇰 香港节点", "🇨🇳 台湾节点", "🇸🇬 狮城节点",
+                             "🇺🇲 美国节点", "🇰🇷 韩国节点"]
 
           text = pathlib.Path("ACL4SSR_Online_Full_ClaudeAI_MultiMode.ini").read_text(encoding="utf-8")
           groups = {}
@@ -119,6 +120,17 @@ jobs:
               # 行格式：custom_proxy_group=名`类型`成员`成员…
               name, _, rest = line.split("=", 1)[1].partition(BT)
               groups[name] = rest.split(BT)
+
+          # 前瞻在这个转换站（subconverter-ng）上【静默匹配 0 个节点】，
+          # 然后 select 组退化成 [DIRECT] —— 配置能加载、看着正常，整组却废了。
+          # 官方 README 里明确写着前瞻可用（`(^(?!.*(美国|日本)).*)`），
+          # 所以这件事只能靠断言拦，不能靠文档推断。
+          # 实测记录：`(^(?!.*\[SELF\]).*)` 与 `(^(?!.*SELF).*)` 都是 0 个。
+          for name, parts in groups.items():
+              for m in parts:
+                  if "(?!" in m:
+                      print("::error::「%s」用了前瞻 %r —— subconverter-ng 不支持，会静默匹配 0 个" % (name, m))
+                      sys.exit(1)
 
           bad = [(n, m) for n, parts in groups.items() for m in parts[1:]
                  if m.startswith("[]") and "[SELF]" in m]
@@ -144,18 +156,28 @@ jobs:
                     % (japan,))
               sys.exit(1)
 
-          # 自建 / 机场 两个显式入口：必须是 select + 过滤器，且不被任何组引用
-          for g, want in (("🚀 自建节点", SELF_ONLY), ("✈️ 机场节点", NOT_SELF)):
-              if groups.get(g) != ["select", want]:
-                  print("::error::「%s」必须是 select + %s，实际 %r" % (g, want, groups.get(g)))
-                  sys.exit(1)
+          # 自建 / 机场 两个显式入口
+          if groups.get("🚀 自建节点") != ["select", SELF_ONLY]:
+              print("::error::「🚀 自建节点」必须是 select + %s，实际 %r"
+                    % (SELF_ONLY, groups.get("🚀 自建节点")))
+              sys.exit(1)
+          want_airport = ["select"] + ["[]" + g for g in AIRPORT_REGIONS]
+          if groups.get("✈️ 机场节点") != want_airport:
+              print("::error::「✈️ 机场节点」必须引用只含机场节点的地区组 %r，实际 %r"
+                    % (want_airport, groups.get("✈️ 机场节点")))
+              sys.exit(1)
+          # 两个入口都是【手动】用的，不能被任何组引用
+          #（否则其中一个空掉时，引用它的那条链路会一起出错）
+          for g in ("🚀 自建节点", "✈️ 机场节点"):
               users = [n for n, parts in groups.items() if ("[]" + g) in parts]
               if users:
                   print("::error::「%s」被 %r 引用了 —— 它是手动入口，空组时会连带出错" % (g, users))
                   sys.exit(1)
+          if "[]🇯🇵 日本节点" in groups.get("✈️ 机场节点", []):
+              print("::error::「✈️ 机场节点」引用了「🇯🇵 日本节点」—— 那个组含自建节点，不再是机场入口")
+              sys.exit(1)
 
-          print("通过：无写死自建节点名；三个自动组与日本节点都是过滤器；"
-                "日本节点含机场日本且自建在前；两个隔离入口就位且无人引用")
+          print("通过：无前瞻、无写死自建节点名；日本节点含机场日本且自建在前；两个隔离入口就位")
           PY
 
       - name: Validate base
