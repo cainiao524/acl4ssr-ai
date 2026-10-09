@@ -240,19 +240,52 @@ class IsolationGroupTests(unittest.TestCase):
                 self.assertFalse(member.startswith("[]") and "SELF" in member,
                                  "写死了自建节点名：%r" % member)
 
-    def test_airport_entry_references_region_groups_and_excludes_japan(self):
-        """机场那一侧引用【只含机场节点】的地区组。
+    def test_airport_entry_has_region_groups_and_japan(self):
+        """机场那一侧 = 5 个只含机场节点的地区组 + 日本机场节点。
 
-        为什么不用 `^(?!.*\\[SELF\\]).*`：subconverter-ng 不支持前瞻，实测匹配 0 个，
-        组会静默退化成 [DIRECT]。为什么不用 `!!GROUPID=1`：同样实测无效，
-        而且把语义绑在订阅顺序上。
-        为什么不引用「🇯🇵 日本节点」：它【同时含自建节点】，放进来就不再是"机场那一侧"。
+        为什么不用 `^(?!.*\\[SELF\\]).*` 把自建排除掉：subconverter-ng 不支持前瞻，
+        实测匹配 0 个、而且静默。为什么不用 `!!GROUPID=1`：同样实测无效，
+        还把语义绑在订阅顺序上。为什么不引用「🇯🇵 日本节点」：它【自建+机场混在一起】，
+        放进来就不再是"机场那一侧"。
         """
         g = build.ISOLATION_GROUPS[1]
         for name in build.AIRPORT_REGION_GROUPS:
             self.assertIn("[]" + name, g)
+        self.assertIn(build.JAPAN_AIRPORT_FILTER, g)
         self.assertNotIn("[]🇯🇵 日本节点", g, "「日本节点」含自建节点，不能算机场入口")
         self.assertNotIn("(?!", g)
+
+    def test_japan_airport_filter_hits_airport_names_only(self):
+        """日本机场节点靠【命名形态】区分（前瞻用不了）：
+             自建  🇯🇵 日本 [SELF] …   —— 「日本」后面是【空格】
+             机场  🇯🇵 日本S01 / 免费-日本1  —— 后面不是空格
+        所以 `日本[^\\s]` 恰好只命中机场日本节点。这也正是这个断言要钉住的：
+        一旦机场改成「日本 大阪」这种带空格的写法，这里会立刻红。
+        """
+        rx = re.compile(build.JAPAN_AIRPORT_FILTER)
+        airport = ["🇯🇵 日本S%02d | IEPL" % i for i in range(1, 12)]
+        airport += ["🇯🇵 免费-日本%d-Ver.7" % i for i in range(1, 8)]
+        self.assertEqual(len(airport), 18, "真实机场里有 18 个日本节点（11 + 7）")
+        for n in airport:
+            self.assertTrue(rx.search(n), "机场日本节点没命中: %r" % n)
+        for n in ("🇯🇵 日本 [SELF] xtls-reality",
+                  "🇯🇵 [VLESS] 日本 [SELF] xtls-reality",
+                  "🇯🇵 日本 [SELF] hysteria2",
+                  "🇭🇰 香港S01", "🇸🇬 新加坡S01 | IEPL | x2",
+                  "🇺🇸 美国S01 | IEPL | x1.5"):
+            self.assertFalse(rx.search(n), "不该命中: %r" % n)
+
+    def test_japan_airport_filter_survives_both_engines(self):
+        """两条硬约束：不能有前瞻（引擎不支持），不能有【字面空白】。
+
+        字面空白这一条是 acl4ssr_build.py 的 normalize_filter_pattern 设的：
+        它会 re.sub(r"\\s+","") 把模式里的空白全删掉 —— 写 `[^ ]` 会被压成 `[^]`
+        （非法正则）从而被整条丢弃。`[^\\s]` 里没有字面空白，两条线都安全。
+        """
+        pat = build.JAPAN_AIRPORT_FILTER
+        self.assertNotIn("(?!", pat)
+        self.assertNotRegex(pat, r"\s", "模式里不能有字面空白")
+        self.assertTrue(re.compile(pat).search("🇯🇵 日本S01"), "必须能编译且能命中")
 
     def test_no_lookahead_anywhere_in_group_definitions(self):
         """禁止前瞻 —— 它的失败方式是【静默】的，必须钉成断言。
