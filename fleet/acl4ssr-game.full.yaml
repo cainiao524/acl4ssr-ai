@@ -1,10 +1,10 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-10-09T09:21:26Z
+# 生成时间(UTC): 2026-10-09T09:52:02Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
-# 策略组 35 个 / 节点 2 个 / 规则 10960 条（规则与节点均为内联，无在线依赖）
+# 策略组 37 个 / 节点 2 个 / 规则 10960 条（规则与节点均为内联，无在线依赖）
 #
 # 三大坑处理说明：
 #   坑1 URL-REGEX 等旧版 Clash 类型：按 mihomo v1.19.x 类型白名单过滤，已丢弃 11 条
@@ -117,7 +117,7 @@ dns:
 
 # 节点全部内联（来源: fleet/proxies.example.yaml，解析形态 yaml-map.proxies）
 proxies:
-  - name: "🇯🇵 日本 xtls-reality"
+  - name: "🇯🇵 日本 [SELF] xtls-reality"
     type: "vless"
     server: "203.0.113.1"
     port: 443
@@ -131,7 +131,7 @@ proxies:
     reality-opts:
       public-key: "Op1QrnDeRDN7ApNabmb0wIIk-XrKMPJ8k3ZxFMnlDD8"
       short-id: ""
-  - name: "🇯🇵 日本 hysteria2"
+  - name: "🇯🇵 日本 [SELF] hysteria2"
     type: "hysteria2"
     server: "203.0.113.1"
     port: 443
@@ -147,84 +147,84 @@ proxy-groups:
     type: select
     lazy: true
     proxies:
-      - "🇯🇵 日本 xtls-reality"
-      - "🇯🇵 日本 hysteria2"
+      - "🇯🇵 日本 [SELF] xtls-reality"
+      - "🇯🇵 日本 [SELF] hysteria2"
   - name: "♻️ 自动选择"
     type: select
     lazy: true
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🔯 故障转移"
     type: select
     lazy: true
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🔮 负载均衡"
     type: select
     lazy: true
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🇭🇰 香港节点"
     type: url-test
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 50
     filter: "(?i)(港|HK|hk|HongKong|HongKong|hongkong)"
-    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 xtls-reality 仅为满足 mihomo
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
     # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
     # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🇨🇳 台湾节点"
     type: url-test
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 50
     filter: "(?i)(台|新北|彰化|TW|Taiwan)"
-    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 xtls-reality 仅为满足 mihomo
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
     # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
     # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🇸🇬 狮城节点"
     type: url-test
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 50
     filter: "(?i)(新加坡|坡|狮城|SG|Singapore)"
-    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 xtls-reality 仅为满足 mihomo
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
     # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
     # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🇺🇲 美国节点"
     type: url-test
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 150
     filter: "(?i)(美|波特兰|达拉斯|俄勒冈|凤凰城|费利蒙|硅谷|拉斯维加斯|洛杉矶|圣何塞|圣克拉拉|西雅图|芝加哥|US|UnitedStates)"
-    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 xtls-reality 仅为满足 mihomo
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
     # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
     # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🇰🇷 韩国节点"
     type: url-test
     url: "http://www.gstatic.com/generate_204"
     interval: 300
     tolerance: 50
     filter: "(?i)(KR|Korea|KOR|首尔|韩|韓)"
-    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 xtls-reality 仅为满足 mihomo
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
     # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
     # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🚀 手动切换"
     type: select
     lazy: true
     proxies:
-      - "🇯🇵 日本 xtls-reality"
-      - "🇯🇵 日本 hysteria2"
+      - "🇯🇵 日本 [SELF] xtls-reality"
+      - "🇯🇵 日本 [SELF] hysteria2"
     filter: "(?i).*"
   - name: "🚀 节点选择"
     type: select
@@ -259,9 +259,9 @@ proxy-groups:
     type: select
     lazy: true
     proxies:
-      - "🇯🇵 日本 xtls-reality"
-      - "🇯🇵 日本 hysteria2"
-    filter: "(?i)(日本|JP|Japan)"
+      - "🇯🇵 日本 [SELF] xtls-reality"
+      - "🇯🇵 日本 [SELF] hysteria2"
+    filter: "(?i)[[]SELF[]]"
   - name: "💬 Ai平台"
     type: select
     lazy: true
@@ -285,11 +285,11 @@ proxy-groups:
     type: select
     lazy: true
     filter: "(?i)(NF|奈飞|解锁|Netflix|NETFLIX|Media)"
-    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 xtls-reality 仅为满足 mihomo
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
     # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
     # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
     proxies:
-      - "🇯🇵 日本 xtls-reality"
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🎥 奈飞视频"
     type: select
     lazy: true
@@ -491,6 +491,22 @@ proxy-groups:
       - "♻️ 自动选择"
       - "🇯🇵 日本节点"
       - "🚀 手动切换"
+  - name: "🚀 自建节点"
+    type: select
+    lazy: true
+    proxies:
+      - "🇯🇵 日本 [SELF] xtls-reality"
+      - "🇯🇵 日本 [SELF] hysteria2"
+    filter: "(?i)[[]SELF[]]"
+  - name: "✈️ 机场节点"
+    type: select
+    lazy: true
+    filter: "(?i)^(?!.*\\[SELF\\]).*"
+    # 本机暂无匹配该组的节点。占位成员 🇯🇵 日本 [SELF] xtls-reality 仅为满足 mihomo
+    # [组内必须至少有一个成员] 的硬约束；刻意不用 DIRECT，
+    # 避免出现「选到空地区组 = 真实 IP 直连」这种静默泄漏。
+    proxies:
+      - "🇯🇵 日本 [SELF] xtls-reality"
   - name: "🔑 Steam 登录"
     type: select
     lazy: true

@@ -2,15 +2,15 @@
   "artifacts": {
     "full_reference": {
       "file": "acl4ssr-game.full.yaml",
-      "sha256": "b019004712c03f1812d25ebcce5538e709cc57eef5bee5479b730e542d765469"
+      "sha256": "4543078e347050b16d73d5aec925ea18ec77b36ee107e06984e15e68bc6d9e6d"
     },
     "template": {
       "file": "acl4ssr-game.template.yaml",
-      "sha256": "8e93ce1d017d68e109ab6036e2ea14c1e80407d5f6639ce0b8b42a1522f94627"
+      "sha256": "2e18e7a054b8c84757f24cdc5389216e161558d765ea004219b299f1a918ab57"
     }
   },
-  "built_at_utc": "2026-10-09T09:21:27Z",
-  "group_count": 35,
+  "built_at_utc": "2026-10-09T09:52:03Z",
+  "group_count": 37,
   "rule_count": 10959,
   "rulesets": {
     "count": 42,
