@@ -73,7 +73,9 @@
 #     分流看着也正常，但账号出口根本不是你以为的那台。
 #     所以下面用【锚点插入】把它放到 AI.list / OpenAi.list 那一组的紧后面。
 #
-#  4) Steam 三分流来自底板，保持不变
+#  4) 日本节点：Hysteria2 优先，失效时切到 Reality（120 秒健康检查）
+#
+#  5) Steam 三分流来自底板，保持不变
 #
 #     🎮 游戏下载(默认DIRECT) / 🎮 Steam 商店/社区(默认节点选择) /
 #     🎮 游戏平台(默认DIRECT)
@@ -89,7 +91,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 
 UPSTREAM_INI = (
     "https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/"
@@ -126,12 +128,23 @@ AI_GROUP_REPLACEMENT = [
     "custom_proxy_group=🔒 AI 专用`select`%s" % AI_NODE_FILTER,
 ]
 
+# 日本同一服务器的 Hysteria2 / XTLS-Reality 主备故障转移。
+# subconverter 会按独立正则的出现顺序添加节点：先 Hysteria2，再 Reality。
+# 如果节点名称改变，请同步调整以下两个过滤正则。
+JAPAN_FALLBACK_GROUP = (
+    "custom_proxy_group=🇯🇵 日本节点`fallback`"
+    "(?:日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan).*(?:[Hh]ysteria2|[Hh][Yy]2)`"
+    "(?:日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan).*(?:[Rr]eality|REALITY)`"
+    "http://www.gstatic.com/generate_204`120,5"
+)
+
 BANNER = [
     "; " + "=" * 76,
     "; 本文件由 build.py 自动生成，请勿手改 —— 改动请改 build.py 里的 patch。",
     "; 底板: %s" % UPSTREAM_INI,
     "; patch: 1) 「💬 Ai平台」改为钉死单节点、去掉自动选择与 DIRECT",
     ";        2) 新增 Claude / ChatGPT 深度规则集（锚点插入，防止被 ProxyGFWlist 抢先）",
+    ";        3) 日本 Hysteria2 优先，失效时切到 XTLS-Reality",
     "; 生成器版本: v%s" % __version__,
     "; " + "=" * 76,
 ]
@@ -225,6 +238,17 @@ def apply_patch(text: str):
             inserted_at = len(kept)
         kept.insert(inserted_at, "clash_rule_base=%s" % CLASH_RULE_BASE)
         report["clash_base_activated"] = "appended"
+
+    # ---- patch 5: 日本节点从测速自动切换改为健康检查主备切换 ----
+    japan_group_re = re.compile(r"^\s*custom_proxy_group\s*=\s*🇯🇵 日本节点`")
+    japan_indices = [i for i, line in enumerate(kept) if japan_group_re.match(line)]
+    if len(japan_indices) != 1:
+        raise RuntimeError(
+            "找不到唯一的「🇯🇵 日本节点」策略组（找到 %d 个）；请检查上游更新。"
+            % len(japan_indices)
+        )
+    kept[japan_indices[0]] = JAPAN_FALLBACK_GROUP
+    report["japan_fallback_replaced"] = True
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)

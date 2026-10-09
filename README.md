@@ -170,6 +170,23 @@ sniffer:                        # HTTP + TLS + QUIC 全开，保证 fake-ip 下�
 
 ---
 
+### 🇯🇵 日本节点：Hysteria2 优先 / Reality 故障转移
+
+`🇯🇵 日本节点` 使用 `fallback` 而不是 `url-test`：Hysteria2 是主线，
+只有健康检查认为它不可用时才使用 Reality；主线恢复后自动切回。
+健康检查每 **120 秒**执行，超时 **5 秒**。
+这不是按延迟择优，也不保证每次应用层失败都能立即切换。
+
+```ini
+custom_proxy_group=🇯🇵 日本节点`fallback`(?:日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan).*(?:[Hh]ysteria2|[Hh][Yy]2)`(?:日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan).*(?:[Rr]eality|REALITY)`http://www.gstatic.com/generate_204`120,5
+```
+
+节点名称需要包括 `日本 … hysteria2` 或 `日本 … xtls-reality`（也支持其他常见日本地区标签）。
+如果机场更改节点名，需要修改 `build.py` 的 `JAPAN_FALLBACK_GROUP`。
+为了启用主备切换，需要在 `🚀 节点选择` 中手动选中 `🇯🇵 日本节点`，
+不要继续选 `♻️ 自动选择`。其他地区的自动测速、Steam 分流和 AI 专用策略保持不变。
+
+---
 ## 默认分流行为：本质是「国内直连、其余走代理」
 
 ```
