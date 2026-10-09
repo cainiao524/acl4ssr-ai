@@ -93,8 +93,8 @@ jobs:
             --output patched.ini \
             --report fleet/overlay-report.json
           test -s patched.ini || { echo "::error::覆盖层合并结果为空"; exit 1; }
-          # 覆盖层必须真的生效：三个关键组都要在 patched.ini 里被替换过
-          for grp in '🎮 游戏下载' '💬 Ai平台' '🔑 Steam 登录'; do
+          # 覆盖层必须真的生效：这几个关键组都要在 patched.ini 里被替换过
+          for grp in '🎮 游戏下载' '🎮 Steam 商店/社区' '💬 Ai平台' '🔒 AI专用'; do
             grep -q "custom_proxy_group=${grp}\`" patched.ini \
               || { echo "::error::覆盖层未产生策略组: ${grp}"; exit 1; }
           done
@@ -279,7 +279,7 @@ jobs:
                             text, re.M | re.S)
               return None if not m else re.findall(r'^      - "(.+)"$', m.group(1), re.M)
 
-          for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区", "🔑 Steam 登录",
+          for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区",
                       "💬 Ai平台", "🔒 AI专用", "🚀 自建节点"):
               mem = members(full, grp)
               if mem is None:
@@ -287,10 +287,12 @@ jobs:
               elif not mem:
                   problems.append("策略组 %s 没有成员" % grp)
 
-          # ---- (d) Steam 三分：下载直连 / 商店社区与登录走节点 ----
+          # ---- (d) Steam：下载直连 / 商店社区（含登录）走节点 ----
           # ⚠️ 别"为了 Steam 不碰 VPS"把商店组也改成 DIRECT ——
           #    store.steampowered.com / steamcommunity.com 在国内基本打不开。
           #    真正减少 VPS 占用的是【下载】，它本来就是 DIRECT。
+          #    （登录域名落在商店组的 DOMAIN-SUFFIX,steampowered.com 上，
+          #      出口与商店一致，故不再单独分组。）
           for grp in ("🎮 游戏下载", "🎮 游戏平台"):
               mem = members(full, grp) or []
               if mem[:1] != ["DIRECT"]:
@@ -299,10 +301,7 @@ jobs:
           store = members(full, "🎮 Steam 商店/社区") or []
           if store[:1] == ["DIRECT"]:
               problems.append("「🎮 Steam 商店/社区」被改成了 DIRECT —— 国内会打不开商店")
-          login = members(full, "🔑 Steam 登录") or []
-          if not login:
-              problems.append("「🔑 Steam 登录」缺失或为空（登录需要能单独控制）")
-          print("Steam 三分正常：下载 DIRECT / 商店与登录走节点")
+          print("Steam 正常：下载 DIRECT / 商店与登录走节点")
 
           # ---- (e) AI 组必须钉死，且只含【自建】节点 ----
           ai = members(full, "💬 Ai平台") or []

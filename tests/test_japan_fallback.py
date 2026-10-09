@@ -99,7 +99,7 @@ class JapanGroupTests(unittest.TestCase):
             self.assertNotIn(brand, build.AI_NODE_FILTER)
 
     def test_steam_download_direct_but_store_keeps_nodes(self):
-        """Steam 三分：下载直连 / 商店社区与登录走节点。
+        """Steam 三分：下载直连 / 商店社区（含登录）走节点。
 
         ⚠️ 不要"为了 Steam 不碰 VPS"把商店组也改成 DIRECT ——
            store.steampowered.com / steamcommunity.com 在国内基本打不开。
@@ -107,17 +107,12 @@ class JapanGroupTests(unittest.TestCase):
         """
         output, report = build.apply_patch(fixture())
         self.assertEqual(report['steam_download_direct'], 2)
-        self.assertTrue(report['steam_login_group_added'])
 
         for g in ("🎮 游戏下载", "🎮 游戏平台"):
             self.assertIn("custom_proxy_group=%s`select`[]DIRECT" % g, output,
                           "%s 首位不是 DIRECT" % g)
 
-        # 登录组默认跟商店组一致：走节点，不是直连
-        self.assertIn("custom_proxy_group=🔑 Steam 登录`select`[]🚀 节点选择`[]DIRECT",
-                      output)
-
-        # 商店组必须保持上游的「🚀 节点选择」优先
+        # 商店组必须保持上游的「🚀 节点选择」优先。
         # 行格式：custom_proxy_group=名`type`第一位成员`第二位成员…
         #   所以 split("`")[2] 才是第一位成员（[3] 已经是第二个了）
         store_lines = [l for l in output.splitlines()
@@ -127,15 +122,11 @@ class JapanGroupTests(unittest.TestCase):
         self.assertIn("节点选择", first_member,
                       "商店组首位被改成了 %r —— 国内会打不开" % first_member)
 
-        # 四条登录规则必须在，且排在第一行 ruleset= 之前（先命中者胜）
-        for host in ("login", "api", "checkout", "help"):
-            self.assertIn("rules=DOMAIN,%s.steampowered.com,🔑 Steam 登录" % host, output)
-        ol = output.splitlines()
-        first_rule = next(i for i, l in enumerate(ol)
-                          if l.startswith("rules=DOMAIN,login.steampowered.com"))
-        first_ruleset = next(i for i, l in enumerate(ol) if l.startswith("ruleset="))
-        self.assertLess(first_rule, first_ruleset,
-                        "登录规则排在 ruleset 之后会被 steampowered.com 抢先命中")
+        # 「🔑 Steam 登录」已被移除；登录域名应回落到商店组
+        self.assertNotIn("🔑 Steam 登录", output,
+                         "登录组已决定去掉，不该再出现")
+        self.assertNotIn("rules=DOMAIN,login.steampowered.com", output,
+                         "登录规则已决定去掉（回落到 DOMAIN-SUFFIX,steampowered.com）")
 
     def test_missing_steam_group_fails_closed(self):
         """Steam 下载组缺失时必须报错，而不是静默留一份下载走代理的配置。"""
