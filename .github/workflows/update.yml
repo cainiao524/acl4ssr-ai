@@ -87,6 +87,56 @@ jobs:
 
           echo "自检通过：AI 组已钉死，规则集位置正确，clash_rule_base 已激活"
 
+      # ── 自建节点【不能】被"写死名字"引用 ────────────────────────────────
+      # 真实事故（FlClash 拒绝加载整份配置）：
+      #     proxy group[3]: 日本节点: '🇯🇵 日本 [SELF] xtls-reality' not found
+      # 原因：转换站 append_type=true 会给节点名插协议前缀，实际产出的是
+      #     🇯🇵 [VLESS] 日本 [SELF] xtls-reality
+      # 而改名【只作用于节点名，不作用于组里写死的 `[]名字`】→ 引用悬空。
+      # 对照：「🔒 AI 专用」用的是过滤器 `[[]SELF[]]`，所以它一直正常。
+      #
+      # 这就是当时缺的那一道断言：以前只验"AI 组在不在"，
+      # 没人验"组里的成员名在不在节点表里"，坏配置就一路发到了客户端。
+      # 用 Python 而不是 grep：这些字符串里全是反引号/方括号，
+      # 在 bash 里要套三层转义，很容易写出"看着对其实没匹配上"的假断言。
+      - name: Assert groups do not hardcode self-hosted node names
+        run: |
+          python - <<'PY'
+          import pathlib, sys
+
+          BT = "`"
+          REALITY = r"(\[SELF\].*xtls-reality)"
+          HYST = r"(\[SELF\].*hysteria2)"
+
+          text = pathlib.Path("ACL4SSR_Online_Full_ClaudeAI_MultiMode.ini").read_text(encoding="utf-8")
+          groups = {}
+          for line in text.splitlines():
+              if not line.startswith("custom_proxy_group="):
+                  continue
+              # 行格式：custom_proxy_group=名`类型`成员`成员…
+              name, _, rest = line.split("=", 1)[1].partition(BT)
+              groups[name] = rest.split(BT)
+
+          bad = [(n, m) for n, parts in groups.items() for m in parts[1:]
+                 if m.startswith("[]") and "[SELF]" in m]
+          if bad:
+              for name, member in bad:
+                  print("::error::「%s」写死了自建节点名 %r —— 转换站改名后会悬空，改用过滤器"
+                        % (name, member))
+              sys.exit(1)
+
+          for g in ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡"):
+              if groups.get(g) != ["select", REALITY]:
+                  print("::error::「%s」必须钉死为 select + %s，实际 %r" % (g, REALITY, groups.get(g)))
+                  sys.exit(1)
+          japan = groups.get("🇯🇵 日本节点")
+          if japan != ["select", REALITY, HYST]:
+              print("::error::「🇯🇵 日本节点」必须是 Reality 优先 + Hysteria2 可选，实际 %r" % (japan,))
+              sys.exit(1)
+
+          print("通过：没有组写死自建节点名；三个自动组与日本节点都是过滤器 + 单一协议")
+          PY
+
       - name: Validate base
         run: |
           set -euo pipefail
