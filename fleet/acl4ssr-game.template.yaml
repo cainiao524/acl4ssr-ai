@@ -1,10 +1,10 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-10-09T12:26:13Z
+# 生成时间(UTC): 2026-10-09T12:34:02Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
-# 策略组 36 个 / 节点 2 个 / 规则 10956 条（规则与节点均为内联，无在线依赖）
+# 策略组 36 个 / 节点 2 个 / 规则 10957 条（规则与节点均为内联，无在线依赖）
 #
 # 三大坑处理说明：
 #   坑1 URL-REGEX 等旧版 Clash 类型：按 mihomo v1.19.x 类型白名单过滤，已丢弃 11 条
@@ -372,8 +372,8 @@ proxy-groups:
     type: select
     lazy: true
     proxies:
-      - "🚀 节点选择"
       - "DIRECT"
+      - "🚀 节点选择"
       - "🇺🇲 美国节点"
       - "🇭🇰 香港节点"
       - "🇨🇳 台湾节点"
@@ -488,6 +488,8 @@ proxy-groups:
 
 # 规则全部内联（来自 ini 的 ruleset 下载结果 + rules= 内联规则）
 rules:
+  - "DOMAIN-KEYWORD,openai,💬 Ai平台"
+  - "DOMAIN-KEYWORD,chatgpt,💬 Ai平台"
   - "PROCESS-NAME-REGEX,(?i)claude,💬 Ai平台"
   - "PROCESS-PATH-REGEX,(?i)claude,💬 Ai平台"
   - "PROCESS-NAME-REGEX,(?i)chatgpt,💬 Ai平台"
@@ -2376,7 +2378,6 @@ rules:
   - "IP-CIDR6,2001:b28:f23f::/48,📲 电报消息,no-resolve"
   - "DOMAIN-KEYWORD,anthropic,💬 Ai平台"
   - "DOMAIN-KEYWORD,claude,💬 Ai平台"
-  - "DOMAIN-KEYWORD,openai,💬 Ai平台"
   - "DOMAIN,ai.google.dev,💬 Ai平台"
   - "DOMAIN,aistudio.google.com,💬 Ai平台"
   - "DOMAIN,api.githubcopilot.com,💬 Ai平台"
