@@ -1,0 +1,66 @@
+{
+  "artifacts": {
+    "full_reference": {
+      "file": "acl4ssr-game.full.yaml",
+      "sha256": "dfafa0065e28fb4573e28a867caf049b96ee0db6c24b5e11f780791ff38be7b9"
+    },
+    "template": {
+      "file": "acl4ssr-game.template.yaml",
+      "sha256": "e89ce204d1b54e9f3ff03ea0f8a4ff811e82000e92137cefc1e673596e442229"
+    }
+  },
+  "built_at_utc": "2026-10-09T09:10:04Z",
+  "group_count": 35,
+  "rule_count": 10959,
+  "rulesets": {
+    "count": 42,
+    "sha256": {
+      "rule01.list": "0789504d97d8f5b14513c529c61c06f4f862c5cfd20f7cb30bbcd38357e54468",
+      "rule02.list": "016837560f1f0eeb576f81600c95b547bd82e27ba27a175a3b5010de9bd18ffa",
+      "rule03.list": "27a5f6d018d428409d8da5d9f390a46298d505ae4941bb8172f052055abe7262",
+      "rule04.list": "35cefd7a4c01d2efa9b4c7928e21caa348f78a3f60b46d7d850f1e3334a5a766",
+      "rule05.list": "f115f84bef66a5aa931fd20f23d6914cdfdfe3d07795d65549d578b91a0f0c48",
+      "rule06.list": "00ffcc16d0eb1898cba4f9c2cc2ce76a8f70bef7a03aea436dad79982b77c8ca",
+      "rule07.list": "b847948e128a0fc882e602c576f87334f7ebd67bbf4e6e3d25e93e28a5b1aeba",
+      "rule08.list": "798fe9b6ed2920a7caa5b75eb44a2e41e464878ff87b38ec962cc2ec13d8be3c",
+      "rule09.list": "b502566c1b86d5512111bd4a2bb5d808eda4e36aad3009a3ca05da354c09449e",
+      "rule10.list": "7b2e60cd0bf3c4bfb1369890d39cc3783bdfcb016089b78acee0ff6f0d4e51c5",
+      "rule11.list": "483f613b31a1c054ddfffa6584b449f4447944ea58b8c1fc06b67eb13c09db89",
+      "rule12.list": "63e70895ac8c04c3b28965dc0b4ba9ceb3a1313a66b49487ed96005debc97e1e",
+      "rule13.list": "c4f839e4dda6cb96e4373349c72b4e5f848b8ae03564c0d0eae0873955310129",
+      "rule14.list": "f1d4b6057b71688b3dbd11e4fee222cf48e3ba48d3de736223f33fd755c116c5",
+      "rule15.list": "a055cdd9b5874ecddd93d59effb9c166fa194ff601189498abbfbff0a4116fa1",
+      "rule16.list": "8254e2518082103b7b3f88063562cefc3e04350b74aa411aad0ee4a66e8a9338",
+      "rule17.list": "9b31b32663d4e38cada177af76dcdef92121ea6bbfab48974a0c4fb914546cf0",
+      "rule18.list": "5a5232f6e79d28731c22e8c4302582a59f7df554e826576627351e7e15db8d89",
+      "rule19.list": "35826051b8797c7636210389fafadea23a16af51378feee20ededbb652b43332",
+      "rule20.list": "82c144434e9199c524d95caa8e3659c9f6f1de9fd23b223a58b5d3c821923936",
+      "rule21.list": "8f5fcadadd967023aa81273803de80beb2ceadd9af4e9352b565b3b00ccf464d",
+      "rule22.list": "83cd3c809f0cb781c695f6753246968a88178a375a74561a6b21e5752a74f960",
+      "rule23.list": "0d77e539ce57ab90f8d907c1f34e8b4105f13181b417800fb7611325c9955e56",
+      "rule24.list": "b6a5607200a67a6f581bd2ba6ee41b836d66f3d965db6e6fa50361304a041295",
+      "rule25.list": "8112c4b70412939a028de87b4c871e40b62aa30eda197034a55b5980297af134",
+      "rule26.list": "4ed23550ff8bd47fbae2e9b286fb6cf71b724f5a657cf4972be3987cecd18091",
+      "rule27.list": "ca3cf3ea5051ed220c255fbccbdd93e477f1c558e26ada6bf3dbcc2ba0487da2",
+      "rule28.list": "ae276909536cb1c4d0296fe1151b06c6d6ca574cb0c0293d62ecf76613b73971",
+      "rule29.list": "03b90246ad58c5cd95cce3a58deee14f6707b0e6a46f8d0766df38d2d8cefcf9",
+      "rule30.list": "87bb7c0453f02fe8b409c0fd4118a97e03885d204541a6b791ecadceefeeb754",
+      "rule31.list": "a0b4c51a829c8b85c4ebcab0400d5c55469f76aaeacfb39cdfeb64d92225fe47",
+      "rule32.list": "5e9d81d4615d993fb899d11f761ff5272465bf11e52233c656c3c3e4ab9cd800",
+      "rule33.list": "eb09e16b5aa228230e5770bfc04f2eb25261454a0b2e16f05fd3e9d2ab5202b5",
+      "rule34.list": "5c2b875abd3cec4d11612af639163a9b9f68c5828ad42793e7f21bc50f75169c",
+      "rule35.list": "074d94bc66219f7a229a0ddc7150e3befb088b4fbbe3312dc3f95456b2fef96c",
+      "rule36.list": "3d111a3c69cb332cdec9c6283acbc9e0c17a62cc25abf43a3390e1667c6861dc",
+      "rule37.list": "69c437c641bbbea0001f33ecf6e8a6333a72f53d537b19ac9fd564d6927a2b21",
+      "rule38.list": "fe886c6f537c0214446018f3f64291db8d500c58877d180d2a21a78c19c499e1",
+      "rule39.list": "72d5f97cb3adedd7ef632962effda4aa3b9953da20427cd6050d55d1184de5ea",
+      "rule40.list": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
+      "rule41.list": "cbc63e3daee0c0467558394ce0cfdd342f28e6c0f903bc4b35b6a5f06279d160",
+      "rule42.list": "62b72d16b8f2bcbc80eb2c7af35dc03b31c4d82e732af6d227c2a311f04bdadc"
+    }
+  },
+  "upstream_ini": {
+    "sha256": "dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216",
+    "url": "https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini"
+  }
+}
