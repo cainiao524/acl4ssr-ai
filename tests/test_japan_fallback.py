@@ -67,6 +67,48 @@ class JapanGroupTests(unittest.TestCase):
 
         self.assertNotIn('🇯🇵 日本节点`url-test`', output)
 
+    def test_japan_group_keeps_airport_japan_nodes_after_the_self_hosted_ones(self):
+        """「🇯🇵 日本节点」是【地区组】，机场的日本节点必须在里面 —— 但排在自建之后。
+
+        ⚠️ 这里防的是两个方向相反的错，必须同时成立：
+
+        ① 只有自建 2 个 —— 组名叫「日本节点」却一个机场日本节点都没有。
+           它是 ACL4SSR 的地区组，另外 13 个组（油管/奈飞/国外媒体/漏网之鱼/
+           Steam 商店…）都 `[]🇯🇵 日本节点` 引用它，于是那 13 个组一起
+           失去了"选一个机场日本节点"的能力。
+
+        ② 机场节点排到前面 —— 默认出口就漂到机场了。
+           select 组【首位即默认出口】，而 AI 链路虽然另走 🔒 AI 专用，
+           地区组被手动选中时同样要保证落在自己的机器上。
+        """
+        # ① 三个成员，顺序必须是 自建Reality → 自建Hysteria2 → 机场日本
+        self.assertEqual(
+            build.JAPAN_FALLBACK_GROUP,
+            "custom_proxy_group=🇯🇵 日本节点`select`"
+            + build.SELF_REALITY_FILTER + "`"
+            + build.SELF_HYSTERIA2_FILTER + "`"
+            + build.JAPAN_REGION_FILTER,
+        )
+        # ② 默认出口 = 首位 = 自建 Reality，且不是任何"自己会换"的类型
+        self.assertLess(build.JAPAN_FALLBACK_GROUP.index('xtls-reality'),
+                        build.JAPAN_FALLBACK_GROUP.index(build.JAPAN_REGION_FILTER))
+        for flapping in ('`fallback`', '`url-test`', '`load-balance`'):
+            self.assertNotIn(flapping, build.JAPAN_FALLBACK_GROUP)
+
+    def test_japan_region_filter_selects_airport_japan_not_self_hosted(self):
+        """地区过滤器：命中机场日本节点，且把自建那两个排除掉（否则成员重复）。"""
+        rx = re.compile(build.JAPAN_REGION_FILTER)
+        airport_jp = ("🇯🇵 日本S01 | IEPL", "🇯🇵 日本S05 | 下载专用 | x0.01",
+                      "🇯🇵 免费-日本1-Ver.7", "🇯🇵 [SS] 日本S02 | IEPL")
+        for name in airport_jp:
+            self.assertTrue(rx.search(name), "机场日本节点没被命中：%r" % name)
+        for name in ("🇯🇵 日本 [SELF] xtls-reality",
+                     "🇯🇵 [VLESS] 日本 [SELF] xtls-reality",
+                     "🇯🇵 日本 [SELF] hysteria2",
+                     "🇭🇰 香港S01", "🇸🇬 新加坡S01 | IEPL | x2",
+                     "🇺🇸 美国S01 | IEPL | x1.5", "🇰🇷 韩国S01"):
+            self.assertFalse(rx.search(name), "不该命中：%r" % name)
+
     def test_auto_select_groups_pinned_to_self_hosted(self):
         """♻️/🔯/🔮 必须从 `.*` 改成只指向自建节点。
 
@@ -148,6 +190,54 @@ class JapanGroupTests(unittest.TestCase):
     def test_missing_group_fails_closed(self):
         with self.assertRaisesRegex(RuntimeError, '日本节点'):
             build.apply_patch(fixture(False))
+
+
+class IsolationGroupTests(unittest.TestCase):
+    """「🚀 自建节点 / ✈️ 机场节点」两个显式入口。
+
+    这条线（给订阅转换站用的）比自建那条线更需要它们：产物里自建 2 个 +
+    机场 46 个混在同一份订阅里，没有显式入口就只能从 48 项里靠名字认
+    哪台是自己的机器 —— 选错的代价是 AI 出口漂到机场，属于账号风险。
+    """
+
+    def test_both_isolation_groups_are_added(self):
+        output, report = build.apply_patch(fixture())
+        self.assertEqual(report['isolation_groups_inserted'], 2)
+        for g in build.ISOLATION_GROUPS:
+            self.assertIn(g, output)
+
+    def test_isolation_groups_are_select_and_never_auto_picking(self):
+        """必须是 select —— 一旦是 url-test/fallback/load-balance 就"自己会换"。"""
+        for g in build.ISOLATION_GROUPS:
+            self.assertIn('`select`', g)
+            for flapping in ('`url-test`', '`fallback`', '`load-balance`'):
+                self.assertNotIn(flapping, g)
+
+    def test_isolation_groups_use_filters_not_hardcoded_names(self):
+        """成员得是过滤器/归属标识，不能写死节点名（转换站会改名）。"""
+        self.assertIn(build.AI_NODE_FILTER, build.ISOLATION_GROUPS[0])
+        self.assertIn(build.NOT_SELF_FILTER, build.ISOLATION_GROUPS[1])
+        for g in build.ISOLATION_GROUPS:
+            for member in g.split("`")[2:]:
+                self.assertFalse(member.startswith("[]") and "SELF" in member,
+                                 "写死了自建节点名：%r" % member)
+
+    def test_isolation_groups_are_placed_right_after_the_ai_group(self):
+        output, _ = build.apply_patch(fixture())
+        lines = output.splitlines()
+        ai = next(i for i, l in enumerate(lines) if l.startswith("custom_proxy_group=🔒 AI 专用`"))
+        got = [l.split("=", 1)[1].split("`", 1)[0] for l in lines[ai + 1:ai + 3]]
+        want = [g.split("=", 1)[1].split("`", 1)[0] for g in build.ISOLATION_GROUPS]
+        self.assertEqual(got, want, "两个入口必须紧跟「🔒 AI 专用」，方便一眼找到")
+
+    def test_isolation_groups_are_not_referenced_by_any_group(self):
+        """不被任何规则/组引用 —— 即使其中一个为空，也不影响任何流量走向。"""
+        output, _ = build.apply_patch(fixture())
+        names = [g.split("=", 1)[1].split("`", 1)[0] for g in build.ISOLATION_GROUPS]
+        for name in names:
+            users = [l for l in output.splitlines()
+                     if l.startswith("custom_proxy_group=") and ("[]" + name) in l]
+            self.assertEqual(users, [], "「%s」被引用了，空组时会连带出错" % name)
 
 
 class ConverterRenameImmunityTests(unittest.TestCase):
