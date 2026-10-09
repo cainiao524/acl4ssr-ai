@@ -135,6 +135,26 @@ AI_GROUP_REPLACEMENT = [
     "custom_proxy_group=🔒 AI 专用`select`%s" % AI_NODE_FILTER,
 ]
 
+# 自建节点在【转换站】手里会被改名 —— 所以下面所有"钉死自建节点"的组
+# 一律用【过滤器】表达，不能用 `[]节点名` 引用。
+#
+# ⚠️ 真实事故（FlClash 报 proxy group[3]: 日本节点: '🇯🇵 日本 [SELF]
+#    xtls-reality' not found）：转换站的 append_type=true 会给节点名插入
+#    协议前缀，变成
+#        🇯🇵 [VLESS] 日本 [SELF] xtls-reality
+#    而改名【只作用于节点名，不作用于组里写死的 `[]名字` 引用】，
+#    引用就悬空了；`select` 组解析不到成员 = 整份配置加载失败。
+#    `🔒 AI 专用` 用的是过滤器 [[]SELF[]]，所以它一直没事 —— 这就是对照。
+#
+# 正则的两条硬约束（两条线共用同一份字符串，别改坏）：
+#   * 【不能有字面空格】。assets/acl4ssr_build.py 的 normalize_filter_pattern
+#     会 re.sub(r"\s+", "", body) 把空格全删掉，写 "日本 [SELF] xtls-reality"
+#     会被压成 "日本[SELF]xtls-reality" —— 一个节点都匹配不到、组直接空掉。
+#   * 【[SELF] 必须转义】成 \[SELF\]，否则 `[SELF]` 是字符类（匹配 S/E/L/F 之一）。
+#   * 用 .* 跨过地区与协议之间可能出现的任何 [TYPE] 前缀 —— 这就是免疫点。
+SELF_REALITY_FILTER = r"(\[SELF\].*xtls-reality)"
+SELF_HYSTERIA2_FILTER = r"(\[SELF\].*hysteria2)"
+
 # 「🇯🇵 日本节点」——自建节点的固定出口。
 #
 # ⚠️ 这里曾经是 `fallback` 主备切换（Hysteria2 优先、失效切 Reality）。
@@ -149,8 +169,7 @@ AI_GROUP_REPLACEMENT = [
 #    "… hysteria2 [SELF] hysteria2" 这种脏名字。
 JAPAN_FALLBACK_GROUP = (
     "custom_proxy_group=🇯🇵 日本节点`select`"
-    "[]🇯🇵 日本 [SELF] xtls-reality`"
-    "[]🇯🇵 日本 [SELF] hysteria2"
+    "%s`%s" % (SELF_REALITY_FILTER, SELF_HYSTERIA2_FILTER)
 )
 
 # 「会自动挑节点」的三个组 —— 必须钉死在自建节点上。
@@ -164,8 +183,13 @@ JAPAN_FALLBACK_GROUP = (
 # 机场通常比自建 VPS 快，所以默认出口会落到机场上。
 #
 # 对 Claude / ChatGPT 账号，出口 IP 漂到机场是头号封号信号。所以钉死。
+#
+# ⚠️ 钉的写法是【过滤器】而不是 `[]🇯🇵 日本 [SELF] xtls-reality` 名字引用：
+#    转换站的 append_type 会把节点改名成 `🇯🇵 [VLESS] 日本 [SELF] xtls-reality`，
+#    名字引用当场悬空、客户端拒绝加载配置（见上面 SELF_REALITY_FILTER 的事故记录）。
+#    filter 只匹配【恰好一个】节点（协议名是区分点），所以 select 首位仍然恒定。
 PINNED_GROUP_TEMPLATE = (
-    "custom_proxy_group={group}`select`[]🇯🇵 日本 [SELF] xtls-reality"
+    "custom_proxy_group={group}`select`%s" % SELF_REALITY_FILTER
 )
 AUTO_SELECT_GROUPS = ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡")
 
