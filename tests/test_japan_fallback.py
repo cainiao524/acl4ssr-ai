@@ -15,7 +15,14 @@ import build
 SELF_REALITY_NAME = "🇯🇵 日本 [SELF] xtls-reality"
 
 
-def fixture(with_japan=True, with_auto=True, with_steam=True):
+MS_DEFAULT_LINE = (
+    "custom_proxy_group=%s`select`[]DIRECT`[]🚀 节点选择"
+    "`[]🇺🇲 美国节点`[]🇭🇰 香港节点`[]🚀 手动切换" % build.MICROSOFT_SERVICE_GROUP
+)
+
+
+def fixture(with_japan=True, with_auto=True, with_steam=True,
+            with_ms=True, ms_line=None):
     lines = [
         '[custom]',
         build.ANCHOR,
@@ -24,6 +31,9 @@ def fixture(with_japan=True, with_auto=True, with_steam=True):
         'ruleset=🎮 Steam 商店/社区,https://example.com/web.list',
         ';clash_rule_base=https://example.com/base.yaml',
     ]
+    # 上游形态：微软服务的首位是 []DIRECT（这正是要改掉的那一点）
+    if with_ms:
+        lines.append(ms_line or MS_DEFAULT_LINE)
     if with_japan:
         lines.insert(3, 'custom_proxy_group=🇯🇵 日本节点`url-test`日本`http://example.com`300')
     if with_auto:
@@ -278,6 +288,56 @@ class IsolationGroupTests(unittest.TestCase):
             users = [l for l in output.splitlines()
                      if l.startswith("custom_proxy_group=") and ("[]" + name) in l]
             self.assertEqual(users, [], "「%s」被引用了，空组时会连带出错" % name)
+
+
+class MicrosoftServiceDefaultTests(unittest.TestCase):
+    """「Ⓜ️ 微软服务」的默认出口必须是节点，不能是 DIRECT。
+
+    上游是 `[]DIRECT` 在首位。问题在于 OpenAI 有一批资产和实时通道跑在
+    微软/Azure 的主机名上：
+
+        openaiapi-site.azureedge.net
+        openaiassets.blob.core.windows.net / openaicomproductionae4b.blob...
+        production-openaicom-storage.azureedge.net
+        chatgpt-async-webps-prod-*.webpubsub.azure.com   ← ChatGPT 实时/语音信令
+
+    这些域名规则【声明在微软规则集之后】，会先被微软的宽泛后缀
+    （azure.com / windows.net / azureedge.net）吃掉，落进这一组 ——
+    所以这一组的默认出口，就是那批域名的真实出口。
+    它要是 DIRECT，ChatGPT 的文件存储和实时通道就走真实 IP，而且毫无报错。
+    """
+
+    def test_first_member_is_node_selection_not_direct(self):
+        output, report = build.apply_patch(fixture())
+        self.assertTrue(report['ms_service_default_proxy'])
+        line = next(l for l in output.splitlines()
+                    if l.startswith("custom_proxy_group=" + build.MICROSOFT_SERVICE_GROUP + "`"))
+        parts = line.split("`")
+        self.assertEqual(parts[1], "select")
+        self.assertEqual(parts[2], build.MICROSOFT_DEFAULT_MEMBER,
+                         "首位必须是 %s" % build.MICROSOFT_DEFAULT_MEMBER)
+        self.assertNotEqual(parts[2], "[]DIRECT", "首位不能还是 DIRECT")
+
+    def test_only_the_first_two_members_are_swapped(self):
+        """只调换前两个成员：其余成员及其相对顺序必须原样保留。"""
+        output, _ = build.apply_patch(fixture())
+        line = next(l for l in output.splitlines()
+                    if l.startswith("custom_proxy_group=" + build.MICROSOFT_SERVICE_GROUP + "`"))
+        self.assertEqual(
+            line,
+            MS_DEFAULT_LINE.replace("[]DIRECT`[]🚀 节点选择", "[]🚀 节点选择`[]DIRECT"),
+        )
+
+    def test_missing_group_fails_closed(self):
+        with self.assertRaisesRegex(RuntimeError, '微软服务'):
+            build.apply_patch(fixture(with_ms=False))
+
+    def test_missing_member_fails_closed(self):
+        """成员不在时【必须报错】—— 静默跳过等于留一份域名单仍直连的配置。"""
+        no_member = ("custom_proxy_group=%s`select`[]DIRECT`[]🚀 手动切换"
+                     % build.MICROSOFT_SERVICE_GROUP)
+        with self.assertRaisesRegex(RuntimeError, '没有成员'):
+            build.apply_patch(fixture(ms_line=no_member))
 
 
 class ConverterRenameImmunityTests(unittest.TestCase):
