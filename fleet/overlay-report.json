@@ -1,6 +1,9 @@
 {
   "replaced_groups": [
     "🚀 节点选择",
+    "♻️ 自动选择",
+    "🔯 故障转移",
+    "🔮 负载均衡",
     "💬 Ai平台",
     "🎮 游戏下载",
     "🎮 游戏平台",
@@ -20,6 +23,6 @@
   "anchored_rulesets": 2,
   "base_group_count": 33,
   "output": "patched.ini",
-  "output_bytes": 12455,
+  "output_bytes": 12397,
   "output_lines": 125
 }
