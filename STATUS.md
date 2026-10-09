@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| 最近巡检 | 2026-10-09 12:38 UTC |
+| 最近巡检 | 2026-10-09 12:42 UTC |
 | 巡检脚本 | `check.py` v1.0.0 |
 | 被引用规则集 | **43** 条 |
 | 不可达 | **0** 条 |
@@ -38,8 +38,8 @@
 | `📲 电报消息` | `ACL4SSR/ACL4SSR/master/Clash/Telegram.list` | 200 | 0.5 KB |
 | `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list` | 200 | 1.4 KB |
 | `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list` | 200 | 0.5 KB |
-| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/anthropic.list` | 200 | - |
-| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/openai.list` | 200 | - |
+| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/anthropic.list` | 200 | 1.6 KB |
+| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/openai.list` | 200 | 1.7 KB |
 | `🎶 网易音乐` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/NetEaseMusic.list` | 200 | 1.3 KB |
 | `🎮 游戏下载` | `cainiao524/acl4ssr-steam/main/rules/GameDownload.list` | 200 | 2.7 KB |
 | `🎮 Steam 商店/社区` | `cainiao524/acl4ssr-steam/main/rules/GameSteamWeb.list` | 200 | 1.1 KB |
