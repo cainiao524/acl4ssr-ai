@@ -107,6 +107,9 @@ jobs:
           BT = "`"
           REALITY = r"(\[SELF\].*xtls-reality)"
           HYST = r"(\[SELF\].*hysteria2)"
+          NOT_SELF = r"(^(?!.*\[SELF\]).*)"
+          JAPAN = r"(^(?!.*\[SELF\]).*(日本|🇯🇵|Japan|JP))"
+          SELF_ONLY = "[[]SELF[]]"
 
           text = pathlib.Path("ACL4SSR_Online_Full_ClaudeAI_MultiMode.ini").read_text(encoding="utf-8")
           groups = {}
@@ -129,12 +132,30 @@ jobs:
               if groups.get(g) != ["select", REALITY]:
                   print("::error::「%s」必须钉死为 select + %s，实际 %r" % (g, REALITY, groups.get(g)))
                   sys.exit(1)
+
+          # 「🇯🇵 日本节点」必须【同时】满足两件方向相反的事，缺一个都是缺陷：
+          #   ① 机场日本节点在里面 —— 它是地区组，另外 13 个组引用它；
+          #      只有自建 2 个 = 组名叫「日本节点」却没有一个机场日本节点。
+          #   ② 机场节点排在自建【之后】—— select 首位即默认出口，
+          #      排前面就漂到机场了（账号风险）。
           japan = groups.get("🇯🇵 日本节点")
-          if japan != ["select", REALITY, HYST]:
-              print("::error::「🇯🇵 日本节点」必须是 Reality 优先 + Hysteria2 可选，实际 %r" % (japan,))
+          if japan != ["select", REALITY, HYST, JAPAN]:
+              print("::error::「🇯🇵 日本节点」必须是 [自建Reality, 自建Hysteria2, 机场日本]，实际 %r"
+                    % (japan,))
               sys.exit(1)
 
-          print("通过：没有组写死自建节点名；三个自动组与日本节点都是过滤器 + 单一协议")
+          # 自建 / 机场 两个显式入口：必须是 select + 过滤器，且不被任何组引用
+          for g, want in (("🚀 自建节点", SELF_ONLY), ("✈️ 机场节点", NOT_SELF)):
+              if groups.get(g) != ["select", want]:
+                  print("::error::「%s」必须是 select + %s，实际 %r" % (g, want, groups.get(g)))
+                  sys.exit(1)
+              users = [n for n, parts in groups.items() if ("[]" + g) in parts]
+              if users:
+                  print("::error::「%s」被 %r 引用了 —— 它是手动入口，空组时会连带出错" % (g, users))
+                  sys.exit(1)
+
+          print("通过：无写死自建节点名；三个自动组与日本节点都是过滤器；"
+                "日本节点含机场日本且自建在前；两个隔离入口就位且无人引用")
           PY
 
       - name: Validate base
