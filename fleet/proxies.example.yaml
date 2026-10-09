@@ -32,5 +32,5 @@
 # =============================================================================
 
 proxies:
-  - {name: "🇯🇵 日本 xtls-reality", type: vless, server: 203.0.113.1, port: 443, uuid: 2d5ea100-c933-bdf2-7bce-8b6587bb5fd3, network: tcp, udp: true, tls: true, flow: xtls-rprx-vision, servername: addons.mozilla.org, client-fingerprint: chrome, reality-opts: {public-key: Op1QrnDeRDN7ApNabmb0wIIk-XrKMPJ8k3ZxFMnlDD8, short-id: ""} }
-  - {name: "🇯🇵 日本 hysteria2", type: hysteria2, server: 203.0.113.1, port: 443, up: "200 Mbps", down: "1000 Mbps", password: 2d5ea100c933bdf27bce8b6587bb5fd3, sni: addons.mozilla.org, skip-cert-verify: false }
+  - {name: "🇯🇵 日本 [SELF] xtls-reality", type: vless, server: 203.0.113.1, port: 443, uuid: 2d5ea100-c933-bdf2-7bce-8b6587bb5fd3, network: tcp, udp: true, tls: true, flow: xtls-rprx-vision, servername: addons.mozilla.org, client-fingerprint: chrome, reality-opts: {public-key: Op1QrnDeRDN7ApNabmb0wIIk-XrKMPJ8k3ZxFMnlDD8, short-id: ""} }
+  - {name: "🇯🇵 日本 [SELF] hysteria2", type: hysteria2, server: 203.0.113.1, port: 443, up: "200 Mbps", down: "1000 Mbps", password: 2d5ea100c933bdf27bce8b6587bb5fd3, sni: addons.mozilla.org, skip-cert-verify: false }
