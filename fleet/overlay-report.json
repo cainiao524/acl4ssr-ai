@@ -13,11 +13,10 @@
   "added_groups": [
     "🔒 AI专用",
     "🚀 自建节点",
-    "✈️ 机场节点",
-    "🔑 Steam 登录"
+    "✈️ 机场节点"
   ],
   "appended_keys": {
-    "rules": 10
+    "rules": 6
   },
   "anchors": {
     "💬 Ai平台": 27
@@ -25,6 +24,6 @@
   "anchored_rulesets": 2,
   "base_group_count": 33,
   "output": "patched.ini",
-  "output_bytes": 12548,
-  "output_lines": 127
+  "output_bytes": 12259,
+  "output_lines": 122
 }
