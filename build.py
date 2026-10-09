@@ -179,6 +179,25 @@ AIRPORT_REGION_GROUPS = (
     "🇭🇰 香港节点", "🇨🇳 台湾节点", "🇸🇬 狮城节点", "🇺🇲 美国节点", "🇰🇷 韩国节点",
 )
 
+# 机场的日本节点 —— 单独拎出来，否则「✈️ 机场节点」里一个日本都没有。
+#
+# 为什么不能直接引用「🇯🇵 日本节点」：那个组【自建 + 机场混在一起】
+# （自建两个在最前），放进机场入口就不再是"机场那一侧"了。
+#
+# 为什么不用 `^(?!.*\[SELF\]).*` 把自建排除掉：subconverter-ng 不支持前瞻，
+# 实测匹配 0 个节点，而且失败是静默的（见上面 NOT_SELF 那段记录）。
+#
+# 所以只能靠【命名形态】区分，而这是能验证的：
+#     自建：🇯🇵 日本 [SELF] xtls-reality      —— 日本 后面是【空格】
+#     机场：🇯🇵 日本S01 | IEPL / 免费-日本1-Ver.7 —— 日本 后面不是空格
+# 于是 `日本[^\s]` 恰好只命中机场日本节点。
+# 为什么写 [^\s] 而不是字面空格或 [^ ]：acl4ssr_build.py 的
+# normalize_filter_pattern 会 re.sub(r"\s+","") 删掉模式里的【字面空白】，
+# 写 `[^ ]` 会被压成 `[^]`（非法正则）→ 过滤器被丢弃。`[^\s]` 里没有字面空白，
+# 两条线都能安全通过。⚠️ 若机场哪天把节点名写成「日本 大阪」（带空格），
+# 这个模式会失配 —— 那时改成 `(日本(S|免费)|…)` 之类，并同步 tests 里的用例。
+JAPAN_AIRPORT_FILTER = r"(日本[^\s])"
+
 # 机场的日本节点（正向匹配，不用前瞻）。
 #
 # `JP` 这种短词做子串匹配容易误伤，所以对过数据：在真实 48 个节点名上，
@@ -232,7 +251,8 @@ JAPAN_FALLBACK_GROUP = (
 ISOLATION_GROUPS = (
     "custom_proxy_group=🚀 自建节点`select`%s" % AI_NODE_FILTER,
     "custom_proxy_group=✈️ 机场节点`select`"
-    + "`".join("[]" + g for g in AIRPORT_REGION_GROUPS),
+    + "`".join("[]" + g for g in AIRPORT_REGION_GROUPS)
+    + "`" + JAPAN_AIRPORT_FILTER,
 )
 
 # 「会自动挑节点」的三个组 —— 必须钉死在自建节点上。
