@@ -118,9 +118,16 @@ AI_RULESETS = [
     "https://cdn.jsdelivr.net/gh/VPSDance/ai-proxy-rules@main/rules/surge/openai.list",
 ]
 
-# 节点名正则：命中「专用 / 落地 / 解锁」类节点。改成你自己节点的标识即可。
-# 注意这里刻意【不加】`.*` —— 那会匹配全部节点，等于没有钉死。
-AI_NODE_FILTER = "(AI|Claude|GPT|OpenAI|专用|专线|Dedicated|落地|解锁)"
+# 节点名正则：只认带 [SELF] 标识的【自建】节点。
+#
+# ⚠️ 这里曾经是 "(AI|Claude|GPT|OpenAI|专用|专线|Dedicated|落地|解锁)" ——
+#    靠"节点名里有没有 AI 字样"来挑 AI 出口。那个口径在加入机场节点后会崩：
+#    机场节点名叫「🇯🇵 日本 IEPL 专线」这种太常见了，于是它们会被吸进 AI 组，
+#    而 select 组首位即默认出口 —— AI 出口 IP 悄悄变成机场节点。
+#    对 Claude / ChatGPT 账号，IP 漂移是头号封号信号。
+#    所以改成按【归属标识】过滤：自建节点名里带 [SELF]，机场节点没有。
+#    这样无论机场怎么命名，都进不来。
+AI_NODE_FILTER = "[[]SELF[]]"
 
 # 替换「💬 Ai平台」组定义（上游那一行会被整行替换掉）
 AI_GROUP_REPLACEMENT = [
@@ -128,14 +135,22 @@ AI_GROUP_REPLACEMENT = [
     "custom_proxy_group=🔒 AI 专用`select`%s" % AI_NODE_FILTER,
 ]
 
-# 日本同一服务器的 Hysteria2 / XTLS-Reality 主备故障转移。
-# subconverter 会按独立正则的出现顺序添加节点：先 Hysteria2，再 Reality。
-# 如果节点名称改变，请同步调整以下两个过滤正则。
+# 「🇯🇵 日本节点」——自建节点的固定出口。
+#
+# ⚠️ 这里曾经是 `fallback` 主备切换（Hysteria2 优先、失效切 Reality）。
+#    那个设计有个副作用：同一个 IP 的两个协议延迟差常年在几十毫秒内浮动，
+#    于是健康检查会反复换协议，正在跑的长连接随切换被重建 —— 表现就是
+#    "连接方式一直变、不稳定"，而且这正是用户实际反馈的问题。
+#    现在改成 select + 两个协议都列出：出口【恒定】为 Reality，
+#    需要换协议时在客户端一键切，不用改配置。
+#
+# ⚠️ 节点名的格式是 <地区> [SELF] <协议>，协议名必须在最后 ——
+#    机器侧 sing-box 内核靠"剥掉末尾协议名"反推节点名，顺序错了会造出
+#    "… hysteria2 [SELF] hysteria2" 这种脏名字。
 JAPAN_FALLBACK_GROUP = (
-    "custom_proxy_group=🇯🇵 日本节点`fallback`"
-    "(?:日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan).*(?:[Hh]ysteria2|[Hh][Yy]2)`"
-    "(?:日本|川日|东京|大阪|泉日|埼玉|沪日|深日|JP|Japan).*(?:[Rr]eality|REALITY)`"
-    "http://www.gstatic.com/generate_204`120,5"
+    "custom_proxy_group=🇯🇵 日本节点`select`"
+    "[]🇯🇵 日本 [SELF] xtls-reality`"
+    "[]🇯🇵 日本 [SELF] hysteria2"
 )
 
 BANNER = [
