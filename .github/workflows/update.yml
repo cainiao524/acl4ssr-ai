@@ -177,7 +177,23 @@ jobs:
               print("::error::「✈️ 机场节点」引用了「🇯🇵 日本节点」—— 那个组含自建节点，不再是机场入口")
               sys.exit(1)
 
-          print("通过：无前瞻、无写死自建节点名；日本节点含机场日本且自建在前；两个隔离入口就位")
+          # 「Ⓜ️ 微软服务」首位必须是节点组（上游是 []DIRECT）。
+          # 为什么这条很关键：OpenAI 有一批资产和实时通道跑在微软/Azure 主机名上
+          # （*.blob.core.windows.net / *.azureedge.net / *.webpubsub.azure.com），
+          # 它们的域名规则【声明在微软规则集之后】，会先被微软的宽泛后缀吃掉、
+          # 落进这一组 —— 所以这一组的首位就是那批域名的真实出口。
+          # 是 DIRECT 的话，ChatGPT 的文件存储与实时通道就走真实 IP，且毫无报错。
+          ms_key = next((n for n in groups if "微软服务" in n), None)
+          if ms_key is None:
+              print("::error::找不到「微软服务」策略组")
+              sys.exit(1)
+          if groups[ms_key][:2] != ["select", "[]🚀 节点选择"]:
+              print("::error::「%s」首位必须是 []🚀 节点选择，实际 %r"
+                    % (ms_key, groups[ms_key][:3]))
+              sys.exit(1)
+
+          print("通过：无前瞻、无写死自建节点名；日本节点含机场日本且自建在前；"
+                "两个隔离入口就位；微软服务首位已改为节点")
           PY
 
       - name: Validate base
