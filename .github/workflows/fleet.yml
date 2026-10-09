@@ -287,30 +287,26 @@ jobs:
               elif not mem:
                   problems.append("策略组 %s 没有成员" % grp)
 
-          # ---- (c2) Ⓜ️ 微软服务 首位必须是节点组，不能是 DIRECT ----
-          # 这一条防的是 OpenAI 的 Azure 资产/实时通道直连真实 IP：
-          #     openaiapi-site.azureedge.net / openaiassets.blob.core.windows.net
-          #     openaicomproductionae4b.blob.core.windows.net
+          # ---- (c2) AI 优先关键字必须排在微软规则【之前】 ----
+          # 防的是 OpenAI 的 Azure 资产/实时通道直连真实 IP：
+          #     openaiapi-site.azureedge.net / *.blob.core.windows.net
           #     production-openaicom-storage.azureedge.net
-          #     openaipublic.blob.core.windows.net
           #     chatgpt-async-webps-prod-*.webpubsub.azure.com  ← 实时/语音信令
-          # 它们的规则声明在微软规则集【之后】，会先被微软的宽泛后缀
-          # （azure.com / windows.net / azureedge.net）吃掉、落进这一组 ——
-          # 所以这一组的首位就是它们的真实出口。是 DIRECT 就意味着一路走真实 IP，
-          # 而且不会有任何报错。
-          # 组名按子串查找，避免 emoji 变体（Ⓜ️）让断言变成永假的摆设。
-          ms_key = next((n for n in re.findall(r'^  - name: "(.+)"$', full, re.M)
-                         if "微软服务" in n), None)
-          if ms_key is None:
-              problems.append("完整版缺少策略组: 微软服务")
-          else:
-              ms_mem = members(full, ms_key)
-              if not ms_mem:
-                  problems.append("策略组 %s 没有成员" % ms_key)
-              elif ms_mem[0] != "🚀 节点选择":
-                  problems.append("%s 首位是 %r，必须是 🚀 节点选择（上游是 DIRECT）—— "
-                                  "否则 OpenAI 的 Azure 资产/实时通道会直连真实 IP"
-                                  % (ms_key, ms_mem[0]))
+          # 微软规则集（Microsoft.list → azure.com / windows.net / azureedge.net）
+          # 声明在 AI 规则集之前，先匹配者胜 => 它们先落进「Ⓜ️ 微软服务」，
+          # 而那一组首位是 DIRECT，于是走真实 IP 且【毫无报错】。
+          # 覆盖层用两条内联关键字把它们拉回 AI 组（只动这几个域，
+          # 微软其余流量保持直连）—— 这里断言那两条确实排在微软规则之前。
+          pri = re.search(r'DOMAIN-KEYWORD,openai,💬 Ai平台', full)
+          ms = re.search(r'DOMAIN-SUFFIX,azure\.com,Ⓜ️ 微软服务', full)
+          if not pri:
+              problems.append("完整版里没有 DOMAIN-KEYWORD,openai 规则 —— "
+                              "那几个 OpenAI-on-Azure 域会直连真实 IP")
+          if not ms:
+              problems.append("完整版里找不到 DOMAIN-SUFFIX,azure.com 规则，无法校验顺序")
+          if pri and ms and pri.start() > ms.start():
+              problems.append("AI 关键字规则排在微软规则【之后】—— "
+                              "那几个 OpenAI-on-Azure 域会直连真实 IP")
 
           # ---- (d) Steam：下载直连 / 商店社区（含登录）走节点 ----
           # ⚠️ 别"为了 Steam 不碰 VPS"把商店组也改成 DIRECT ——
