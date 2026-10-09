@@ -7,7 +7,6 @@
     "💬 Ai平台",
     "🎮 游戏下载",
     "🎮 游戏平台",
-    "🎮 Steam 商店/社区",
     "🐟 漏网之鱼",
     "🇯🇵 日本节点"
   ],
@@ -26,6 +25,6 @@
   "anchored_rulesets": 2,
   "base_group_count": 33,
   "output": "patched.ini",
-  "output_bytes": 12544,
+  "output_bytes": 12548,
   "output_lines": 127
 }
