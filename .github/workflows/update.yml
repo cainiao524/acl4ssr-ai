@@ -114,6 +114,9 @@ jobs:
           SELF_ONLY = "[[]SELF[]]"
           AIRPORT_REGIONS = ["🇭🇰 香港节点", "🇨🇳 台湾节点", "🇸🇬 狮城节点",
                              "🇺🇲 美国节点", "🇰🇷 韩国节点"]
+          # 机场日本节点：靠命名形态区分（自建是「日本 」，机场不是）。
+          # 前瞻在这个引擎上静默匹配 0 个，所以不能用否定前瞻。
+          JAPAN_AIRPORT = r"(日本[^\s])"
           AI_PRIORITY = ("https://raw.githubusercontent.com/cainiao524/acl4ssr-ai/main/"
                          "base/ai-priority.list")
 
@@ -166,7 +169,8 @@ jobs:
               print("::error::「🚀 自建节点」必须是 select + %s，实际 %r"
                     % (SELF_ONLY, groups.get("🚀 自建节点")))
               sys.exit(1)
-          want_airport = ["select"] + ["[]" + g for g in AIRPORT_REGIONS]
+          want_airport = (["select"] + ["[]" + g for g in AIRPORT_REGIONS]
+                          + [JAPAN_AIRPORT])
           if groups.get("✈️ 机场节点") != want_airport:
               print("::error::「✈️ 机场节点」必须引用只含机场节点的地区组 %r，实际 %r"
                     % (want_airport, groups.get("✈️ 机场节点")))
