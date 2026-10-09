@@ -70,6 +70,7 @@ import sys
 import time
 import urllib.error
 import urllib.request
+import warnings
 from pathlib import Path
 
 __version__ = "2.0.0"
@@ -367,6 +368,16 @@ def log(message: str) -> None:
     sys.stderr.flush()
 
 
+def configure_stdio() -> None:
+    """让 CLI 在 Windows 默认代码页下也能输出节点组里的 emoji。"""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, OSError, ValueError):
+            # 兼容被调用方传入的简化文件对象。
+            pass
+
+
 def q(value) -> str:
     """YAML 双引号标量。json.dumps 的输出是合法 YAML 双引号标量，
     且 ensure_ascii=False 能原样保留 emoji（如 "🇯🇵 日本 JP xtls-reality"）。"""
@@ -565,7 +576,12 @@ def normalize_filter_pattern(member: str):
     if not body:
         return None
     try:
-        re.compile(body)
+        # `[[]SELF[]]` is ACL4SSR's portable spelling for a literal
+        # `[SELF]`. Python warns about the nested character-set syntax even
+        # though it is valid and intentionally supported here.
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Possible nested set")
+            re.compile(body)
     except re.error:
         return None
     if body.startswith("(?i)"):
@@ -690,6 +706,10 @@ def parse_ini(text: str, stats: dict):
     seen_group_names = set()
 
     for line in logical_lines(text):
+        # ACL4SSR 文件通常带有 [custom] 这样的 INI 段标题；它不是配置项，
+        # 不应被当成“无法识别的行”写入统计并触发误报。
+        if re.match(r"^\s*\[[^\]]+\]\s*$", line):
+            continue
         if "=" not in line:
             stats["unrecognized_lines"].append(line[:160])
             stats["unrecognized_count"] += 1
@@ -2553,6 +2573,7 @@ def parse_args(argv):
 
 
 def main(argv=None) -> int:
+    configure_stdio()
     parser, args = parse_args(sys.argv[1:] if argv is None else argv)
     if not getattr(args, "mode", None):
         parser.print_help()
