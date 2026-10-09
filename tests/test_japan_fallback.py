@@ -98,36 +98,47 @@ class JapanGroupTests(unittest.TestCase):
         for brand in ('专线', 'Dedicated', '落地', '解锁', 'Claude', 'GPT'):
             self.assertNotIn(brand, build.AI_NODE_FILTER)
 
-    def test_steam_all_direct_and_login_group_added(self):
-        """Steam 一律不碰 VPS：四个 Steam 组必须 DIRECT 优先。
+    def test_steam_download_direct_but_store_keeps_nodes(self):
+        """Steam 三分：下载直连 / 商店社区与登录走节点。
 
-        上游「🎮 Steam 商店/社区」首位是「🚀 节点选择」= 默认走代理，
-        而它的 DOMAIN-SUFFIX,steampowered.com 会把 login.* 一起吞掉 ——
-        于是 Steam 流量（含登录）会静默走自建 VPS。
-        本机定位是"只服务 AI 站点"，所以 Steam 全部改直连。
+        ⚠️ 不要"为了 Steam 不碰 VPS"把商店组也改成 DIRECT ——
+           store.steampowered.com / steamcommunity.com 在国内基本打不开。
+           真正减少 VPS 占用的是【下载】，它本来就是 DIRECT。
         """
         output, report = build.apply_patch(fixture())
-        self.assertEqual(report['steam_groups_direct'], 3)
+        self.assertEqual(report['steam_download_direct'], 2)
         self.assertTrue(report['steam_login_group_added'])
 
-        for g in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区", "🔑 Steam 登录"):
+        for g in ("🎮 游戏下载", "🎮 游戏平台"):
             self.assertIn("custom_proxy_group=%s`select`[]DIRECT" % g, output,
                           "%s 首位不是 DIRECT" % g)
 
-        # 四条登录规则必须在
+        # 登录组默认跟商店组一致：走节点，不是直连
+        self.assertIn("custom_proxy_group=🔑 Steam 登录`select`[]🚀 节点选择`[]DIRECT",
+                      output)
+
+        # 商店组必须保持上游的「🚀 节点选择」优先
+        # 行格式：custom_proxy_group=名`type`第一位成员`第二位成员…
+        #   所以 split("`")[2] 才是第一位成员（[3] 已经是第二个了）
+        store_lines = [l for l in output.splitlines()
+                       if l.startswith("custom_proxy_group=🎮 Steam 商店/社区")]
+        self.assertTrue(store_lines, "商店组丢失")
+        first_member = store_lines[0].split("`")[2]
+        self.assertIn("节点选择", first_member,
+                      "商店组首位被改成了 %r —— 国内会打不开" % first_member)
+
+        # 四条登录规则必须在，且排在第一行 ruleset= 之前（先命中者胜）
         for host in ("login", "api", "checkout", "help"):
             self.assertIn("rules=DOMAIN,%s.steampowered.com,🔑 Steam 登录" % host, output)
-
-        # 登录规则必须排在第一行 ruleset= 之前（先命中者胜）
-        lines = output.splitlines()
-        first_rule = next(i for i, l in enumerate(lines)
+        ol = output.splitlines()
+        first_rule = next(i for i, l in enumerate(ol)
                           if l.startswith("rules=DOMAIN,login.steampowered.com"))
-        first_ruleset = next(i for i, l in enumerate(lines) if l.startswith("ruleset="))
+        first_ruleset = next(i for i, l in enumerate(ol) if l.startswith("ruleset="))
         self.assertLess(first_rule, first_ruleset,
                         "登录规则排在 ruleset 之后会被 steampowered.com 抢先命中")
 
     def test_missing_steam_group_fails_closed(self):
-        """Steam 组缺失时必须报错，而不是静默留一份"Steam 走代理"的配置。"""
+        """Steam 下载组缺失时必须报错，而不是静默留一份下载走代理的配置。"""
         with self.assertRaisesRegex(RuntimeError, '游戏下载'):
             build.apply_patch(fixture(with_steam=False))
 
