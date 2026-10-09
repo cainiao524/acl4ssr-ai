@@ -169,6 +169,34 @@ PINNED_GROUP_TEMPLATE = (
 )
 AUTO_SELECT_GROUPS = ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡")
 
+# ── Steam 全部改直连：本机（VPS）只服务 AI 站点 ─────────────────────────────
+#
+# 上游三个 Steam 组里，「🎮 游戏下载」和「🎮 游戏平台」本身就是 DIRECT 优先，
+# 但「🎮 Steam 商店/社区」的首位是「🚀 节点选择」—— 默认走代理。
+# 于是 store / community / 以及被它吞掉的 login.* 都会走自建 VPS。
+#
+# 明确取舍：**Steam 一律不碰 VPS**。
+#   为什么：① 不占 VPS 流量；② Steam 看到的是国区 IP，和账号地区一致；
+#           ③ VPS 的定位是"给 AI 站点用的固定出口"，混进游戏流量没好处。
+#   代价：store.steampowered.com / steamcommunity.com 在国内常常打不开 ——
+#         届时在客户端里把该组切到「🚀 节点选择」即可（保留可选项）。
+STEAM_GROUPS = {
+    "🎮 游戏下载": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
+    "🎮 游戏平台": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
+    "🎮 Steam 商店/社区": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`",
+}
+
+# 「🔑 Steam 登录」—— 上游没有这个组，由本脚本新增。
+# 拆出来的目的不是"走哪个出口"，而是让登录**能在客户端里单独控制**。
+# 默认 DIRECT（见上面的取舍），保留手动切到节点的可能。
+STEAM_LOGIN_GROUP = "custom_proxy_group=🔑 Steam 登录`select`[]DIRECT`[]🔒 AI 专用"
+STEAM_LOGIN_RULES = [
+    "rules=DOMAIN,login.steampowered.com,🔑 Steam 登录",
+    "rules=DOMAIN,api.steampowered.com,🔑 Steam 登录",
+    "rules=DOMAIN,checkout.steampowered.com,🔑 Steam 登录",
+    "rules=DOMAIN,help.steampowered.com,🔑 Steam 登录",
+]
+
 BANNER = [
     "; " + "=" * 76,
     "; 本文件由 build.py 自动生成，请勿手改 —— 改动请改 build.py 里的 patch。",
@@ -312,6 +340,42 @@ def apply_patch(text: str):
             kept[i] = PINNED_GROUP_TEMPLATE.format(group=group_name)
             pinned += 1
     report["auto_select_pinned"] = pinned
+
+    # ---- patch 7: Steam 全部改直连（VPS 只服务 AI 站点）---------------------
+    #
+    # 上游「🎮 Steam 商店/社区」首位是「🚀 节点选择」= 默认走代理，
+    # 而它的 DOMAIN-SUFFIX,steampowered.com 连 login.* 一起吞掉。
+    # 这里把三个 Steam 组统一成 DIRECT 优先，并新增「🔑 Steam 登录」组 +
+    # 四条 DOMAIN 规则（DOMAIN 优先级高于 DOMAIN-SUFFIX，会先命中）。
+    #
+    # 缺组时 fail-closed：宁可报错，也不要静默留一份"Steam 偷偷走 VPS"的配置。
+    steam_replaced = 0
+    for group_name, members in STEAM_GROUPS.items():
+        pat = re.compile(r"^\s*custom_proxy_group\s*=\s*%s`" % re.escape(group_name))
+        idxs = [i for i, line in enumerate(kept) if pat.match(line)]
+        if not idxs:
+            raise RuntimeError(
+                "找不到「%s」策略组定义，上游 ini 结构可能已变。\n"
+                "  Steam 组必须在，否则 Steam 流量会默认走代理。" % group_name
+            )
+        for i in idxs:
+            kept[i] = "custom_proxy_group=%s`select`%s" % (group_name, members)
+            steam_replaced += 1
+
+    # 新增「🔑 Steam 登录」组：插在「🎮 Steam 商店/社区」之后，便于阅读
+    anchor = next((i for i, line in enumerate(kept)
+                   if re.match(r"^\s*custom_proxy_group\s*=\s*🎮 Steam 商店/社区`", line)), None)
+    kept.insert((anchor + 1) if anchor is not None else len(kept), STEAM_LOGIN_GROUP)
+
+    # 四条登录规则：插在第一条 ruleset= 之前，
+    # 保证排在 GameSteamWeb.list 的 DOMAIN-SUFFIX,steampowered.com 前面
+    first_ruleset = next((i for i, line in enumerate(kept)
+                          if re.match(r"^\s*ruleset\s*=", line)), len(kept))
+    for offset, rule in enumerate(STEAM_LOGIN_RULES):
+        kept.insert(first_ruleset + offset, rule)
+
+    report["steam_groups_direct"] = steam_replaced
+    report["steam_login_group_added"] = True
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)
