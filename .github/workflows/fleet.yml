@@ -248,6 +248,12 @@ jobs:
               problems.append("完整版里出现了注入标记 —— 两份产物串了")
 
           # ---- (b) 模板与完整版必须只差 proxies 段 ----
+          # 归一化：去掉每次构建都会变的注释行（时间戳与统计行）。否则这条断言
+          # 会在两次 build 跨秒时误报 —— 而"误报"会把真正的差异淹掉。
+          #   实测踩过：full 生成于 09:20:40、tpl 生成于 09:20:41，
+          #   仅因这一行不同就让整条流水线红了。
+          VOLATILE = re.compile(r'^# (生成时间\(UTC\)|策略组 \d+ 个 / 节点)')
+
           def strip_proxies(text):
               out, skip = [], False
               for ln in text.splitlines():
@@ -255,10 +261,12 @@ jobs:
                       skip = True
                       continue
                   if skip:
-                      # proxies 段内容：缩进行 或 注释行，都跳过
+                      # proxies 段内容：缩进行 或 注释行（含注入标记），都跳过
                       if not ln.strip() or ln[:1].isspace() or ln.lstrip().startswith("#"):
                           continue
                       skip = False
+                  if VOLATILE.match(ln):
+                      continue
                   out.append(ln)
               return "\n".join(out)
 
