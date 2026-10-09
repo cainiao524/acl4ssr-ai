@@ -287,17 +287,22 @@ jobs:
               elif not mem:
                   problems.append("策略组 %s 没有成员" % grp)
 
-          # ---- (d) Steam 全部 DIRECT ----
-          # 本机定位：VPS 只服务 AI 站点，Steam 一律不碰。
-          # 「🎮 Steam 商店/社区」的上游默认是「🚀 节点选择」= 走代理，
-          # 而且它的 DOMAIN-SUFFIX,steampowered.com 会把 login.* 一起吞掉 ——
-          # 所以这四个组都必须 DIRECT 优先，缺一条就红。
-          for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区", "🔑 Steam 登录"):
+          # ---- (d) Steam 三分：下载直连 / 商店社区与登录走节点 ----
+          # ⚠️ 别"为了 Steam 不碰 VPS"把商店组也改成 DIRECT ——
+          #    store.steampowered.com / steamcommunity.com 在国内基本打不开。
+          #    真正减少 VPS 占用的是【下载】，它本来就是 DIRECT。
+          for grp in ("🎮 游戏下载", "🎮 游戏平台"):
               mem = members(full, grp) or []
               if mem[:1] != ["DIRECT"]:
-                  problems.append("「%s」首位成员是 %r，必须是 DIRECT（Steam 不该走代理）"
+                  problems.append("「%s」首位成员是 %r，必须是 DIRECT（下载不该走代理）"
                                   % (grp, mem[:1]))
-          print("Steam 四组首位均为 DIRECT")
+          store = members(full, "🎮 Steam 商店/社区") or []
+          if store[:1] == ["DIRECT"]:
+              problems.append("「🎮 Steam 商店/社区」被改成了 DIRECT —— 国内会打不开商店")
+          login = members(full, "🔑 Steam 登录") or []
+          if not login:
+              problems.append("「🔑 Steam 登录」缺失或为空（登录需要能单独控制）")
+          print("Steam 三分正常：下载 DIRECT / 商店与登录走节点")
 
           # ---- (e) AI 组必须钉死，且只含【自建】节点 ----
           ai = members(full, "💬 Ai平台") or []
