@@ -11,9 +11,9 @@
 
 | | |
 |---|---|
-| 最近巡检 | 2026-10-09 12:23 UTC |
+| 最近巡检 | 2026-10-09 12:31 UTC |
 | 巡检脚本 | `check.py` v1.0.0 |
-| 被引用规则集 | **42** 条 |
+| 被引用规则集 | **43** 条 |
 | 不可达 | **0** 条 |
 
 ## ✅ 全部规则集可达
@@ -30,6 +30,7 @@
 | `🍃 应用净化` | `ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list` | 200 | 31.9 KB |
 | `📢 谷歌FCM` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list` | 200 | 1.6 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list` | 200 | 1.0 KB |
+| `💬 Ai平台` | `cainiao524/acl4ssr-ai/main/base/ai-priority.list` | 200 | 0.0 KB |
 | `Ⓜ️ 微软Bing` | `ACL4SSR/ACL4SSR/master/Clash/Bing.list` | 200 | 0.2 KB |
 | `Ⓜ️ 微软云盘` | `ACL4SSR/ACL4SSR/master/Clash/OneDrive.list` | 200 | 0.5 KB |
 | `Ⓜ️ 微软服务` | `ACL4SSR/ACL4SSR/master/Clash/Microsoft.list` | 200 | 2.3 KB |
@@ -37,8 +38,8 @@
 | `📲 电报消息` | `ACL4SSR/ACL4SSR/master/Clash/Telegram.list` | 200 | 0.5 KB |
 | `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list` | 200 | 1.4 KB |
 | `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list` | 200 | 0.5 KB |
-| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/anthropic.list` | 200 | 1.6 KB |
-| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/openai.list` | 200 | 1.7 KB |
+| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/anthropic.list` | 200 | - |
+| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/openai.list` | 200 | - |
 | `🎶 网易音乐` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/NetEaseMusic.list` | 200 | 1.3 KB |
 | `🎮 游戏下载` | `cainiao524/acl4ssr-steam/main/rules/GameDownload.list` | 200 | 2.7 KB |
 | `🎮 Steam 商店/社区` | `cainiao524/acl4ssr-steam/main/rules/GameSteamWeb.list` | 200 | 1.1 KB |
