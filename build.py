@@ -153,6 +153,22 @@ JAPAN_FALLBACK_GROUP = (
     "[]🇯🇵 日本 [SELF] hysteria2"
 )
 
+# 「会自动挑节点」的三个组 —— 必须钉死在自建节点上。
+#
+# 上游定义是：
+#     ♻️ 自动选择   url-test      `.*` + 测速 URL
+#     🔯 故障转移   fallback      `.*` + 测速 URL
+#     🔮 负载均衡   load-balance  `.*` + 测速 URL
+# `.*` = 吃下【全部】节点。加了机场订阅后，这三个组的成员会从 2 个变成几十个，
+# 而默认链路 🚀 节点选择 → ♻️ 自动选择，于是默认出口变成"最快的那个节点"——
+# 机场通常比自建 VPS 快，所以默认出口会落到机场上。
+#
+# 对 Claude / ChatGPT 账号，出口 IP 漂到机场是头号封号信号。所以钉死。
+PINNED_GROUP_TEMPLATE = (
+    "custom_proxy_group={group}`select`[]🇯🇵 日本 [SELF] xtls-reality"
+)
+AUTO_SELECT_GROUPS = ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡")
+
 BANNER = [
     "; " + "=" * 76,
     "; 本文件由 build.py 自动生成，请勿手改 —— 改动请改 build.py 里的 patch。",
@@ -264,6 +280,38 @@ def apply_patch(text: str):
         )
     kept[japan_indices[0]] = JAPAN_FALLBACK_GROUP
     report["japan_fallback_replaced"] = True
+
+    # ---- patch 6: 把「会自动挑节点」的三个组钉死在自建节点上 --------------
+    #
+    # 为什么必须做：默认链路是
+    #     🚀 节点选择 → ♻️ 自动选择
+    # 而 ♻️/🔯/🔮 三个组在上游是 url-test / fallback / load-balance + filter `.*`，
+    # 也就是【从所有节点里挑】。一旦把机场订阅也加进来，它们的成员会变成
+    # 几十上百个机场节点 —— 机场通常比自建 VPS 快，于是**默认出口会变成机场节点**。
+    #
+    # 这和本仓库的核心主张（AI / 账号流量的出口必须恒定且属于自己）直接冲突：
+    # 出口 IP 漂到机场，是 Claude / ChatGPT 的头号封号信号。
+    #
+    # VPS 那条线（assets/local-overlay.ini）早就把这三个组钉死了，
+    # 这里补齐，让两条线的默认行为一致 —— 否则会出现
+    # "隔离看起来做对了、默认出口其实还是机场" 这种最难发现的缺口。
+    #
+    # 做法：改成单成员 select。保留组名（别处有引用，删了会悬空），
+    # 单成员的效果就是"永远用那一个"，同时不产生漂移。
+    # 想用机场时走 🚀 手动切换 —— 那是显式手动选择，不是默认。
+    pinned = 0
+    for group_name in AUTO_SELECT_GROUPS:
+        pat = re.compile(r"^\s*custom_proxy_group\s*=\s*%s`" % re.escape(group_name))
+        idxs = [i for i, line in enumerate(kept) if pat.match(line)]
+        if not pinned and not idxs:
+            raise RuntimeError(
+                "找不到「%s」策略组定义，上游 ini 结构可能已变。\n"
+                "  这三个组必须在，否则默认出口会落到机场节点上。" % group_name
+            )
+        for i in idxs:
+            kept[i] = PINNED_GROUP_TEMPLATE.format(group=group_name)
+            pinned += 1
+    report["auto_select_pinned"] = pinned
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)
