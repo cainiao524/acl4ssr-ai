@@ -44,7 +44,14 @@ permissions:
   contents: write           # 需要提交产物
 
 concurrency:
-  group: fleet
+  # ⚠️ 这个组名必须和 update.yml 里的【一模一样】。
+  # 两条工作流都会往 main 推提交：同时跑就会各自 checkout 到同一个 HEAD、
+  # 各自提交、后推的那个被 non-fast-forward 拒绝 —— 表现为
+  # "Commit if changed 失败"，而所有构建/校验步骤其实都是绿的。
+  # 实测踩过 3 次（每次连推多个文件时必现），每次都有人以为是真故障。
+  # GitHub 的 concurrency 组是【仓库级按名字】生效的，所以同名即可互斥。
+  # 别把它改回 "fleet" —— 那等于放弃跨工作流互斥。
+  group: main-write
   cancel-in-progress: false
 
 jobs:
