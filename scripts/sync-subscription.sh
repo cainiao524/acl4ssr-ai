@@ -226,7 +226,15 @@ ensure_mihomo() {
     curl -fsSL --retry 3 --connect-timeout 15 --max-time 240 -o "$WORK/mihomo.gz" "$url" || return 1
     gunzip -c "$WORK/mihomo.gz" > "$WORK/mihomo" || return 1
     install -m 0755 "$WORK/mihomo" "$MIHOMO_BIN" || return 1
-    "$MIHOMO_BIN" -v | head -1
+    # ⚠️ 不要写成 "$MIHOMO_BIN" -v | head -1：
+    #    本脚本是 set -Eeuo pipefail，head 读够一行就退出 -> mihomo 收到 SIGPIPE(141)
+    #    -> 整条管道判失败 -> 函数返回 1 -> 调用方误判"拿不到 mihomo"而跳过 -t 校验。
+    #    实测撞到过：日志里先是下载成功，紧接着又打 WARN 说无法取得 mihomo。
+    #    先存进变量再打印，避免任何上游进程被 SIGPIPE 打断。
+    local ver
+    ver="$("$MIHOMO_BIN" -v 2>/dev/null | sed -n '1p')" || true
+    [ -n "$ver" ] && log "  $ver"
+    return 0
 }
 
 if ensure_mihomo; then
