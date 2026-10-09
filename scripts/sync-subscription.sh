@@ -169,7 +169,7 @@ def members(name):
     return None if not m else re.findall(r'^      - "(.+)"$', m.group(1), re.M)
 
 for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区",
-            "🔑 Steam 登录", "💬 Ai平台", "🔒 AI专用"):
+            "🔑 Steam 登录", "💬 Ai平台", "🔒 AI专用", "🚀 自建节点"):
     if members(grp) is None:
         problems.append("缺少策略组: %s" % grp)
     elif not members(grp):
@@ -182,6 +182,25 @@ if steam[:1] != ["DIRECT"]:
 ai = members("💬 Ai平台") or []
 if ai != ["🔒 AI专用"]:
     problems.append("「💬 Ai平台」成员为 %r，必须仅指向「🔒 AI专用」" % (ai,))
+
+# ── 自建 / 机场 隔离（2026-10-09）───────────────────────────────────────────
+# 防的是一次真实失效：AI 组原用地理正则 (日本|JP|Japan) 过滤，机场节点只要
+# 名字含「日本」/「专线」就会被吸进来；而 select 组首位即默认出口 ——
+# AI 出口 IP 会悄悄变成机场节点。对 Claude / ChatGPT 账号，这是头号封号信号。
+# 边界现在是节点名里的 [SELF]（归属标识），这里把它钉死。
+ai_nodes = members("🔒 AI专用") or []
+bad = [n for n in ai_nodes if "[SELF]" not in n]
+if bad:
+    problems.append("「🔒 AI专用」含非自建（缺 [SELF]）节点: %s —— 机场节点可能已污染 AI 出口" % bad)
+
+self_nodes = members("🚀 自建节点") or []
+if any("[SELF]" not in n for n in self_nodes):
+    problems.append("「🚀 自建节点」含非自建节点: %s" % self_nodes)
+
+jp_nodes = members("🇯🇵 日本节点") or []
+bad = [n for n in jp_nodes if "[SELF]" not in n]
+if bad:
+    problems.append("「🇯🇵 日本节点」混入非自建节点: %s" % bad)
 
 if not re.search(r'^- "MATCH,', text, re.M) and not re.search(r'^  - "MATCH,', text, re.M):
     problems.append("缺少 MATCH 兜底规则")
