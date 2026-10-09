@@ -1,0 +1,36 @@
+# =============================================================================
+#  fleet/proxies.example.yaml —— 机器侧节点文件的【占位样例】（不含任何凭据）
+# -----------------------------------------------------------------------------
+#  CI 用它编译模板产物，目的只有一个：让策略组的成员列表算得准。
+#
+#  ── 为什么公库里也要有一份"节点" ────────────────────────────────────────────
+#  编译产物里的策略组不是「节点引用列表」，而是【已经展开好的真实节点名】。
+#  例如 assets/local-overlay.ini 里的
+#      custom_proxy_group=🔒 AI专用`select`(日本|JP|Japan)
+#  在产物里会变成
+#      proxies: ["🇯🇵 日本 xtls-reality", "🇯🇵 日本 hysteria2"]
+#  名字来自真实节点名 —— 所以 CI 必须"见过"这些名字，产物里的 AI 组才不是空组。
+#
+#  ⚠️ 因此下面两个 name 必须与机器上 /etc/sing-box/subscribe/proxies 里的
+#     节点名【逐字一致】。server / uuid / password / public-key 全是假值 ——
+#     它们不影响策略组成员计算。
+#
+#  ⚠️⚠️ 假值也必须【语法合法】。这不是洁癖，是踩出来的：
+#     mihomo -t 会真的去校验 REALITY public key —— 32 字节的 x25519 key
+#     必须是 43 个 base64url 字符。随手写个 PLACEHOLDER_xxx 会让
+#         level=error msg="proxy 0: invalid REALITY public key"
+#         configuration file ... test failed
+#     于是 CI 里"用占位节点做权威校验"这条路直接被堵死。下面用的是随机生成的
+#     合法密钥（55 字节的假字符串同理不行，hysteria2 会去解析它）。
+#
+#  ── 真值在哪 ───────────────────────────────────────────────────────────────
+#  真值永远只在那台机器上。本文件被 CI 读入后，产物会被 --emit-template 处理成
+#      proxies:
+#        # @NODE_INJECT_POINT@ ← 此处由机器侧注入本地节点（模板产物不含凭据）
+#  也就是说连占位值都不会进仓库产物。部署时由 scripts/sync-subscription.sh
+#  把这一行换成机器上的真实节点。
+# =============================================================================
+
+proxies:
+  - {name: "🇯🇵 日本 xtls-reality", type: vless, server: 203.0.113.1, port: 443, uuid: 2d5ea100-c933-bdf2-7bce-8b6587bb5fd3, network: tcp, udp: true, tls: true, flow: xtls-rprx-vision, servername: addons.mozilla.org, client-fingerprint: chrome, reality-opts: {public-key: Op1QrnDeRDN7ApNabmb0wIIk-XrKMPJ8k3ZxFMnlDD8, short-id: ""} }
+  - {name: "🇯🇵 日本 hysteria2", type: hysteria2, server: 203.0.113.1, port: 443, up: "200 Mbps", down: "1000 Mbps", password: 2d5ea100c933bdf27bce8b6587bb5fd3, sni: addons.mozilla.org, skip-cert-verify: false }
