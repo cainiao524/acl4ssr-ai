@@ -287,6 +287,31 @@ jobs:
               elif not mem:
                   problems.append("策略组 %s 没有成员" % grp)
 
+          # ---- (c2) Ⓜ️ 微软服务 首位必须是节点组，不能是 DIRECT ----
+          # 这一条防的是 OpenAI 的 Azure 资产/实时通道直连真实 IP：
+          #     openaiapi-site.azureedge.net / openaiassets.blob.core.windows.net
+          #     openaicomproductionae4b.blob.core.windows.net
+          #     production-openaicom-storage.azureedge.net
+          #     openaipublic.blob.core.windows.net
+          #     chatgpt-async-webps-prod-*.webpubsub.azure.com  ← 实时/语音信令
+          # 它们的规则声明在微软规则集【之后】，会先被微软的宽泛后缀
+          # （azure.com / windows.net / azureedge.net）吃掉、落进这一组 ——
+          # 所以这一组的首位就是它们的真实出口。是 DIRECT 就意味着一路走真实 IP，
+          # 而且不会有任何报错。
+          # 组名按子串查找，避免 emoji 变体（Ⓜ️）让断言变成永假的摆设。
+          ms_key = next((n for n in re.findall(r'^  - name: "(.+)"$', full, re.M)
+                         if "微软服务" in n), None)
+          if ms_key is None:
+              problems.append("完整版缺少策略组: 微软服务")
+          else:
+              ms_mem = members(full, ms_key)
+              if not ms_mem:
+                  problems.append("策略组 %s 没有成员" % ms_key)
+              elif ms_mem[0] != "🚀 节点选择":
+                  problems.append("%s 首位是 %r，必须是 🚀 节点选择（上游是 DIRECT）—— "
+                                  "否则 OpenAI 的 Azure 资产/实时通道会直连真实 IP"
+                                  % (ms_key, ms_mem[0]))
+
           # ---- (d) Steam：下载直连 / 商店社区（含登录）走节点 ----
           # ⚠️ 别"为了 Steam 不碰 VPS"把商店组也改成 DIRECT ——
           #    store.steampowered.com / steamcommunity.com 在国内基本打不开。
