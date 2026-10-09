@@ -273,6 +273,30 @@ STEAM_GROUPS = {
     "🎮 游戏平台": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
 }
 
+# ── 微软服务：默认出口从 DIRECT 改成走节点 ──────────────────────────────────
+#
+# 上游把 `[]DIRECT` 放在首位 => 所有「Ⓜ️ 微软服务」的流量默认【直连】。
+#
+# 问题在于 OpenAI 有一部分资产和实时通道跑在微软/Azure 的主机名上：
+#     openaiapi-site.azureedge.net
+#     openaiassets.blob.core.windows.net / openaicomproductionae4b.blob.core.windows.net
+#     production-openaicom-storage.azureedge.net
+#     chatgpt-async-webps-prod-*.webpubsub.azure.com   ← ChatGPT 实时/语音信令
+# 它们的域名规则【声明在微软规则集之后】，所以先被微软的宽泛后缀
+# （azure.com / windows.net / azureedge.net）吃掉，落到「Ⓜ️ 微软服务」，
+# 而那个组默认 DIRECT —— 于是 ChatGPT 的文件存储与实时通道直接走真实 IP。
+#
+# 把首位换成「🚀 节点选择」就堵住这一类：
+#     Ⓜ️ 微软服务 → 🚀 节点选择 → ♻️ 自动选择 → 🇯🇵 日本 [SELF] xtls-reality
+# 实现上只调换前两个成员，其余成员及其顺序完全不动。
+#
+# ⚠️ 代价（必须知道）：Windows Update / Office / Teams 这类【大流量】也会默认走 VPS。
+#    如果更在意流量而不是"顺带把这类域也兜住"，替代方案是给 openai / chatgpt
+#    加两条前置关键字规则，只把那几个 OpenAI-on-Azure 域拉回 AI 组，
+#    微软其余流量保持直连。两种都能堵住泄漏，取舍只在流量。
+MICROSOFT_SERVICE_GROUP = "Ⓜ️ 微软服务"
+MICROSOFT_DEFAULT_MEMBER = "[]🚀 节点选择"
+
 BANNER = [
     "; " + "=" * 76,
     "; 本文件由 build.py 自动生成，请勿手改 —— 改动请改 build.py 里的 patch。",
@@ -467,6 +491,36 @@ def apply_patch(text: str):
             kept.insert(anchor_idx[0] + 1 + offset, group_line)
             isolation_inserted += 1
     report["isolation_groups_inserted"] = isolation_inserted
+
+    # ---- patch 9: 「Ⓜ️ 微软服务」默认出口 DIRECT → 🚀 节点选择 --------------
+    #
+    # 只调换前两个成员的位置：成员集合、以及其余成员之间的相对顺序完全不动。
+    # 为什么必须 fail-closed：这一组是 OpenAI 那批 Azure 域名（blob / azureedge /
+    # webpubsub）的兜底出口。它一旦还是 DIRECT，ChatGPT 的文件存储和实时通道
+    # 就直连真实 IP —— 而这条路走错了不会有任何报错。
+    ms_re = re.compile(r"^\s*custom_proxy_group\s*=\s*%s`" % re.escape(MICROSOFT_SERVICE_GROUP))
+    ms_idx = [i for i, line in enumerate(kept) if ms_re.match(line)]
+    if len(ms_idx) != 1:
+        raise RuntimeError(
+            "找不到唯一的「%s」策略组（找到 %d 个）；请检查上游更新。\n"
+            "  它是 OpenAI 那批 Azure 域名的兜底出口，缺了会让它们直连真实 IP。"
+            % (MICROSOFT_SERVICE_GROUP, len(ms_idx))
+        )
+    ms_parts = kept[ms_idx[0]].split("`")
+    ms_members = ms_parts[2:]
+    if MICROSOFT_DEFAULT_MEMBER not in ms_members:
+        raise RuntimeError(
+            "「%s」里没有成员 %s —— 上游可能改过这个组。\n"
+            "  请人工确认后再改；这里刻意不静默跳过，"
+            "否则会留一份「该类域名仍走真实 IP」的配置而没人知道。"
+            % (MICROSOFT_SERVICE_GROUP, MICROSOFT_DEFAULT_MEMBER)
+        )
+    kept[ms_idx[0]] = "`".join(
+        ms_parts[:2]
+        + [MICROSOFT_DEFAULT_MEMBER]
+        + [m for m in ms_members if m != MICROSOFT_DEFAULT_MEMBER]
+    )
+    report["ms_service_default_proxy"] = True
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)
