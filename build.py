@@ -273,29 +273,37 @@ STEAM_GROUPS = {
     "🎮 游戏平台": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
 }
 
-# ── 微软服务：默认出口从 DIRECT 改成走节点 ──────────────────────────────────
+# ── AI 优先关键字：只把那几个被微软规则抢走的域拉回 AI 组 ────────────────────
 #
-# 上游把 `[]DIRECT` 放在首位 => 所有「Ⓜ️ 微软服务」的流量默认【直连】。
-#
-# 问题在于 OpenAI 有一部分资产和实时通道跑在微软/Azure 的主机名上：
+# 问题（实测，不是推测）：OpenAI 有一批资产和实时通道跑在微软/Azure 的主机名上
 #     openaiapi-site.azureedge.net
 #     openaiassets.blob.core.windows.net / openaicomproductionae4b.blob.core.windows.net
 #     production-openaicom-storage.azureedge.net
+#     openaipublic.blob.core.windows.net
 #     chatgpt-async-webps-prod-*.webpubsub.azure.com   ← ChatGPT 实时/语音信令
-# 它们的域名规则【声明在微软规则集之后】，所以先被微软的宽泛后缀
-# （azure.com / windows.net / azureedge.net）吃掉，落到「Ⓜ️ 微软服务」，
-# 而那个组默认 DIRECT —— 于是 ChatGPT 的文件存储与实时通道直接走真实 IP。
+# 而微软的规则集（`ruleset=Ⓜ️ 微软服务,…Microsoft.list`，ini 第 32 行）声明在
+# AI 规则集（第 35-38 行）【之前】。规则先匹配者胜 => 微软的宽泛后缀
+# （azure.com / windows.net / azureedge.net）先把这些域吃掉，落进「Ⓜ️ 微软服务」，
+# 而那一组首位是 DIRECT —— 于是 ChatGPT 的文件存储和实时/语音信令走真实 IP，
+# 且【没有任何报错】。
 #
-# 把首位换成「🚀 节点选择」就堵住这一类：
-#     Ⓜ️ 微软服务 → 🚀 节点选择 → ♻️ 自动选择 → 🇯🇵 日本 [SELF] xtls-reality
-# 实现上只调换前两个成员，其余成员及其顺序完全不动。
+# 修法：【只】在最前面插一个只含两条关键字的规则集，把那几个域拉回 AI 组。
+#     DOMAIN-KEYWORD,openai     ← 覆盖前 5 个（openaicom… 也含 openai）
+#     DOMAIN-KEYWORD,chatgpt    ← 覆盖 webpubsub 那个实时通道
+# 为什么不用"把「Ⓜ️ 微软服务」首位改成节点"：那也行，但会把
+# Windows Update / Office / Teams 这类【大流量】一起拽上 VPS。
+# 这里只动那 6 个域，微软其余流量保持直连。
 #
-# ⚠️ 代价（必须知道）：Windows Update / Office / Teams 这类【大流量】也会默认走 VPS。
-#    如果更在意流量而不是"顺带把这类域也兜住"，替代方案是给 openai / chatgpt
-#    加两条前置关键字规则，只把那几个 OpenAI-on-Azure 域拉回 AI 组，
-#    微软其余流量保持直连。两种都能堵住泄漏，取舍只在流量。
-MICROSOFT_SERVICE_GROUP = "Ⓜ️ 微软服务"
-MICROSOFT_DEFAULT_MEMBER = "[]🚀 节点选择"
+# 为什么不干脆把整个 AI 规则集挪到微软之前：那会连带把
+# copilot.microsoft.com / sydney.bing.com / ai.azure.com 也拉进 AI 组 ——
+# 超出"只修这几个域"的范围，属于另一项决定。
+AI_PRIORITY_LIST = (
+    "https://raw.githubusercontent.com/cainiao524/acl4ssr-ai/main/base/ai-priority.list"
+)
+
+# 插到【第一条微软规则集】之前。用前缀匹配而不是写死整行：
+# 上游换 ruleset URL 时不该让这个 patch 失效。
+MICROSOFT_RULESET_PREFIX = "ruleset=Ⓜ️ 微软"
 
 BANNER = [
     "; " + "=" * 76,
@@ -492,35 +500,30 @@ def apply_patch(text: str):
             isolation_inserted += 1
     report["isolation_groups_inserted"] = isolation_inserted
 
-    # ---- patch 9: 「Ⓜ️ 微软服务」默认出口 DIRECT → 🚀 节点选择 --------------
+    # ---- patch 9: AI 优先关键字插到微软规则集【之前】 ----------------------
     #
-    # 只调换前两个成员的位置：成员集合、以及其余成员之间的相对顺序完全不动。
-    # 为什么必须 fail-closed：这一组是 OpenAI 那批 Azure 域名（blob / azureedge /
-    # webpubsub）的兜底出口。它一旦还是 DIRECT，ChatGPT 的文件存储和实时通道
-    # 就直连真实 IP —— 而这条路走错了不会有任何报错。
-    ms_re = re.compile(r"^\s*custom_proxy_group\s*=\s*%s`" % re.escape(MICROSOFT_SERVICE_GROUP))
-    ms_idx = [i for i, line in enumerate(kept) if ms_re.match(line)]
-    if len(ms_idx) != 1:
+    # 只把落在微软/Azure 主机名上的那几个 OpenAI 域拉回 AI 组，别的都不动
+    # （微软其余流量、Copilot/Bing 的行为都保持原样）。
+    #
+    # 找不到微软规则集时 fail-closed：静默跳过等于留一份
+    # "ChatGPT 实时/语音通道直连真实 IP" 的配置，而且不会有任何报错 ——
+    # 这正是这个 patch 存在的理由，所以它自己也不能静默失败。
+    ms_ruleset_idx = [i for i, line in enumerate(kept)
+                      if line.strip().startswith(MICROSOFT_RULESET_PREFIX)]
+    if not ms_ruleset_idx:
         raise RuntimeError(
-            "找不到唯一的「%s」策略组（找到 %d 个）；请检查上游更新。\n"
-            "  它是 OpenAI 那批 Azure 域名的兜底出口，缺了会让它们直连真实 IP。"
-            % (MICROSOFT_SERVICE_GROUP, len(ms_idx))
+            "找不到以 %r 开头的规则集行，无法把 AI 优先关键字插到它前面。\n"
+            "  不插的话，openai/chatgpt 会被微软的 azure.com / windows.net / "
+            "azureedge.net 抢先，那批 OpenAI-on-Azure 域会直连真实 IP。"
+            % MICROSOFT_RULESET_PREFIX
         )
-    ms_parts = kept[ms_idx[0]].split("`")
-    ms_members = ms_parts[2:]
-    if MICROSOFT_DEFAULT_MEMBER not in ms_members:
-        raise RuntimeError(
-            "「%s」里没有成员 %s —— 上游可能改过这个组。\n"
-            "  请人工确认后再改；这里刻意不静默跳过，"
-            "否则会留一份「该类域名仍走真实 IP」的配置而没人知道。"
-            % (MICROSOFT_SERVICE_GROUP, MICROSOFT_DEFAULT_MEMBER)
-        )
-    kept[ms_idx[0]] = "`".join(
-        ms_parts[:2]
-        + [MICROSOFT_DEFAULT_MEMBER]
-        + [m for m in ms_members if m != MICROSOFT_DEFAULT_MEMBER]
-    )
-    report["ms_service_default_proxy"] = True
+    priority_line = "ruleset=💬 Ai平台,%s" % AI_PRIORITY_LIST
+    if any(line.strip() == priority_line for line in kept):
+        report["ai_priority_ruleset"] = "already-present"
+    else:
+        at = ms_ruleset_idx[0]
+        kept.insert(at, priority_line)
+        report["ai_priority_ruleset"] = "inserted-before:%s" % kept[at + 1].strip()[:60]
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)
