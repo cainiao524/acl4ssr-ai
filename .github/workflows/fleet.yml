@@ -1,0 +1,381 @@
+name: fleet
+
+# =============================================================================
+#  每日构建「机器侧订阅模板」：把「拉上游 + 编译」整条流水线搬到 GitHub Actions。
+# -----------------------------------------------------------------------------
+#  为什么必须搬走（这不是优化，是修一个持续了 10 天的静默故障）：
+#    原来由 VPS 本地生成，而规则集文件是【持久化缓存】—— 非空就 REUSE、永不重下
+#    （cron 里没带 --force，日志连续 4 次都是 `下载成功=0 失败=0 复用=42`）。
+#    只要上游 ini 的 ruleset 列表一变，索引就整体位移，旧的 rule<NN>.list 与新
+#    索引错配，而所有自检只查"非空 / 个数 / 条数"，于是错配静默通过、每天重新
+#    编译一遍。实测把 76 条游戏平台下载 CDN 塞进了「💬 Ai平台」，
+#    同时 Anthropic / OpenAI 两个深度规则集一条都没进产物。
+#
+#    CI runner 每次都是全新机器：没有历史缓存、没有旧 rule<NN>.list。
+#    「不可能错配」由架构保证，而不是靠记得加 --force。
+#
+#  产物（提交回仓库，见 fleet/）：
+#    acl4ssr-game.full.yaml      完整配置（节点为占位假值）—— 只用于 CI 自检
+#    acl4ssr-game.template.yaml  给机器侧的模板：规则 / dns / 策略组一字不差，
+#                                proxies 段只有 @NODE_INJECT_POINT@ 标记
+#    META.json                   上游 ini 与各产物的 sha256、规则数、构建时间
+#
+#  为什么模板里不带真实凭据：本仓库是【公开】的。节点凭据永远不离开机器，
+#  由机器侧 scripts/sync-subscription.sh 在部署时注入。
+# =============================================================================
+
+on:
+  schedule:
+    # UTC 04:20 = 北京时间 12:20。刻意错开整点：GitHub 的定时任务在整点前后
+    # 排队可达数十分钟，而机器侧的同步窗口是固定的，错开能保证「当天构建
+    # 一定在当天同步之前完成」。
+    - cron: "20 4 * * *"
+  workflow_dispatch:        # 手动触发
+  push:
+    branches: [main]
+    paths:                  # 编译逻辑 / 覆盖层 / 节点名变了就立刻重建，不用等第二天
+      - "assets/acl4ssr_build.py"
+      - "assets/overlay_merge.py"
+      - "assets/local-overlay.ini"
+      - "fleet/proxies.example.yaml"
+      - ".github/workflows/fleet.yml"
+
+permissions:
+  contents: write           # 需要提交产物
+
+concurrency:
+  group: fleet
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      UPSTREAM_INI: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
+      OUT_DIR: fleet
+      FULL_YAML: fleet/acl4ssr-game.full.yaml
+      TEMPLATE_YAML: fleet/acl4ssr-game.template.yaml
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # 推送前要先合并远端（见文末）；浅克隆下 merge 找不到共同祖先
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Install deps
+        run: python -m pip install --quiet pyyaml
+
+      # ---------------------------------------------------------------------
+      #  1) 拉上游 ini + 应用本地覆盖层
+      # ---------------------------------------------------------------------
+      - name: Fetch upstream ini
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --retry-delay 2 --connect-timeout 15 --max-time 120 \
+            -o upstream.ini "$UPSTREAM_INI"
+          test -s upstream.ini || { echo "::error::上游 ini 为空"; exit 1; }
+          grep -qE '^[[:space:]]*(custom_proxy_group|ruleset)=' upstream.ini \
+            || { echo "::error::上游 ini 不含 custom_proxy_group / ruleset 段（疑非 subconverter 格式）"; exit 1; }
+          echo "INI_SHA=$(sha256sum upstream.ini | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "上游 ini: $(wc -l < upstream.ini) 行 / $(wc -c < upstream.ini) B"
+
+      - name: Apply local overlay
+        run: |
+          set -euo pipefail
+          python assets/overlay_merge.py \
+            --base upstream.ini \
+            --overlay assets/local-overlay.ini \
+            --output patched.ini \
+            --report fleet/overlay-report.json
+          test -s patched.ini || { echo "::error::覆盖层合并结果为空"; exit 1; }
+          # 覆盖层必须真的生效：三个关键组都要在 patched.ini 里被替换过
+          for grp in '🎮 游戏下载' '💬 Ai平台' '🔑 Steam 登录'; do
+            grep -q "custom_proxy_group=${grp}\`" patched.ini \
+              || { echo "::error::覆盖层未产生策略组: ${grp}"; exit 1; }
+          done
+
+      # ---------------------------------------------------------------------
+      #  2) 解析 + 全量重下规则集
+      # ---------------------------------------------------------------------
+      - name: Parse ini
+        run: |
+          set -euo pipefail
+          python assets/acl4ssr_build.py parse \
+            --ini patched.ini --parsed-json parsed.json \
+            --stats-json stats-parse.json --ini-source "$UPSTREAM_INI"
+
+      - name: Fetch rulesets
+        run: |
+          set -euo pipefail
+          # --force 在 CI 里是双保险（runner 本来就无缓存）。保留它是为了
+          # "任何人都能在本地复现 CI 结果"，而不是依赖 runner 的干净。
+          # 刻意【不传 --cache-dir】：让它走默认 /tmp 缓存，与本地复现一致。
+          python assets/acl4ssr_build.py fetch \
+            --ini patched.ini --parsed-json parsed.json \
+            --stats-json stats-fetch.json --rules-dir rules --force
+          EXPECTED=$(python - <<'PY'
+          import json
+          print(sum(1 for r in json.load(open('parsed.json'))['rulesets'] if r.get('kind') == 'url'))
+          PY
+          )
+          ACTUAL=$(find rules -name 'rule*.list' -size +0c | wc -l)
+          echo "可下载规则集 $EXPECTED 个，落盘非空 $ACTUAL 个"
+          test "$ACTUAL" -eq "$EXPECTED" \
+            || { echo "::error::规则集落盘数量不符（$ACTUAL/$EXPECTED）—— 有下载失败，产物会缺规则"; exit 1; }
+
+      # ---------------------------------------------------------------------
+      #  3) 索引-内容一致性断言
+      #     这是「rule<NN>.list 与 ini 索引错配」的直接拦截器。错配可以被证伪：
+      #     本地文件里的第一条实质规则，必须出现在它对应那个 URL 的内容里。
+      #     对不上 = 拿错文件了。原来那套只查"非空 / 个数"的校验抓不到这一类。
+      # ---------------------------------------------------------------------
+      - name: Assert ruleset index/content alignment
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, sys, urllib.request
+
+          def first_rule(text):
+              for ln in text.splitlines():
+                  s = ln.strip()
+                  if s and not s.startswith("#"):
+                      return s
+              return ""
+
+          parsed = json.load(open("parsed.json"))
+          bad, checked, skipped = [], 0, 0
+          for i, r in enumerate(parsed["rulesets"], start=1):
+              if r.get("kind") != "url":
+                  continue
+              p = pathlib.Path("rules/rule%02d.list" % i)
+              if not p.is_file() or p.stat().st_size == 0:
+                  bad.append((i, r["target"], "文件缺失或为空"))
+                  continue
+              local_first = first_rule(p.read_text(encoding="utf-8", errors="replace"))
+              try:
+                  with urllib.request.urlopen(r["target"], timeout=30) as resp:
+                      remote_first = first_rule(resp.read().decode("utf-8", errors="replace"))
+              except Exception as exc:
+                  # 上游临时抖动不该让整个构建红掉：本地文件本来就是同一轮 fetch
+                  # 刚下下来的，内容必然一致。只有"能读到远端"时才有比对的意义。
+                  print("  [SKIP] %02d 远端不可达，跳过比对（%s）" % (i, exc))
+                  skipped += 1
+                  continue
+              checked += 1
+              if local_first != remote_first:
+                  bad.append((i, r["target"],
+                              "本地首条=%r 远端首条=%r" % (local_first[:60], remote_first[:60])))
+
+          if bad:
+              for i, url, why in bad:
+                  print("::error::规则集错配 rule%02d.list <- %s  (%s)" % (i, url, why))
+              sys.exit(1)
+          print("索引-内容一致性通过：比对 %d 个，跳过 %d 个" % (checked, skipped))
+          PY
+
+      # ---------------------------------------------------------------------
+      #  4) 两份产物：完整版（自检用）+ 模板版（机器侧用）
+      # ---------------------------------------------------------------------
+      - name: Build full config
+        run: |
+          set -euo pipefail
+          python assets/acl4ssr_build.py build \
+            --ini patched.ini --parsed-json parsed.json \
+            --stats-json stats.json --rules-dir rules \
+            --proxies fleet/proxies.example.yaml \
+            --output "$FULL_YAML" --ini-sha256 "$INI_SHA"
+
+      - name: Build template
+        run: |
+          set -euo pipefail
+          python assets/acl4ssr_build.py build \
+            --ini patched.ini --parsed-json parsed.json \
+            --stats-json stats-template.json --rules-dir rules \
+            --proxies fleet/proxies.example.yaml \
+            --output "$TEMPLATE_YAML" --ini-sha256 "$INI_SHA" \
+            --emit-template
+
+      # ---------------------------------------------------------------------
+      #  5) 权威校验 mihomo -t
+      #     唯一能抓住 ProxyGroup 循环 / 成员缺失 / 字段非法的一层。
+      #     版本固定：产物是按这个版本的类型白名单生成的，跟 latest 会引入
+      #     "今天能加载、明天报未知类型"这类不可复现的失败。
+      # ---------------------------------------------------------------------
+      - name: Install mihomo
+        run: |
+          set -euo pipefail
+          V=v1.19.31
+          curl -fsSL --retry 3 --connect-timeout 15 --max-time 240 -o /tmp/mihomo.gz \
+            "https://github.com/MetaCubeX/mihomo/releases/download/${V}/mihomo-linux-amd64-${V}.gz"
+          gunzip -c /tmp/mihomo.gz > /tmp/mihomo
+          chmod +x /tmp/mihomo
+          /tmp/mihomo -v | head -1
+
+      - name: Validate with mihomo -t
+        run: |
+          set -euo pipefail
+          /tmp/mihomo -t -d /tmp/mihomo-test -f "$FULL_YAML" \
+            || { echo "::error::$FULL_YAML 未通过 mihomo -t"; exit 1; }
+          echo "mihomo -t 通过"
+
+      # ---------------------------------------------------------------------
+      #  6) 产物契约（把"看着正常其实已退化"的组合在 CI 就拦掉）
+      # ---------------------------------------------------------------------
+      - name: Assert artifact contract
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, re, sys, pathlib
+
+          tpl = pathlib.Path("fleet/acl4ssr-game.template.yaml").read_text(encoding="utf-8")
+          full = pathlib.Path("fleet/acl4ssr-game.full.yaml").read_text(encoding="utf-8")
+          problems = []
+
+          # ---- (a) 模板必须留注入点，且绝不能含凭据 ----
+          if "@NODE_INJECT_POINT@" not in tpl:
+              problems.append("模板缺少 @NODE_INJECT_POINT@ 注入标记 —— 机器侧无法注入节点")
+          if re.search(r'uuid:\s*"[0-9a-fA-F]{8}-', tpl):
+              problems.append("模板里出现 uuid —— 凭据泄漏")
+          # 完整版必须真的带上了占位节点（否则策略组成员算不准、AI 组会空）
+          if "type: \"hysteria2\"" not in full or "type: \"vless\"" not in full:
+              problems.append("完整版里没有占位节点 —— 策略组成员会算不准（AI 组可能为空）")
+          if "@NODE_INJECT_POINT@" in full:
+              problems.append("完整版里出现了注入标记 —— 两份产物串了")
+
+          # ---- (b) 模板与完整版必须只差 proxies 段 ----
+          def strip_proxies(text):
+              out, skip = [], False
+              for ln in text.splitlines():
+                  if re.match(r'^proxies:', ln):
+                      skip = True
+                      continue
+                  if skip:
+                      # proxies 段内容：缩进行 或 注释行，都跳过
+                      if not ln.strip() or ln[:1].isspace() or ln.lstrip().startswith("#"):
+                          continue
+                      skip = False
+                  out.append(ln)
+              return "\n".join(out)
+
+          if strip_proxies(full) != strip_proxies(tpl):
+              problems.append("模板与完整版在规则/策略组/dns 上不一致 —— 两者必须只差 proxies 段")
+
+          # ---- (c) 关键策略组必须在，且成员真实存在 ----
+          def members(text, name):
+              m = re.search(r'^  - name: "%s"\n(.*?)(?=^  - name: |\Z)' % re.escape(name),
+                            text, re.M | re.S)
+              return None if not m else re.findall(r'^      - "(.+)"$', m.group(1), re.M)
+
+          for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区", "🔑 Steam 登录",
+                      "💬 Ai平台", "🔒 AI专用"):
+              mem = members(full, grp)
+              if mem is None:
+                  problems.append("完整版缺少策略组: %s" % grp)
+              elif not mem:
+                  problems.append("策略组 %s 没有成员" % grp)
+
+          # ---- (d) Steam 下载组首位必须是 DIRECT ----
+          # 这是 2026-10-09 修掉的坑：build_groups() 曾把内建策略 append 到末尾，
+          # 于是 ini 里 `[]DIRECT` 打头也变成"节点选择打头"，下载默认走代理吃流量。
+          steam = members(full, "🎮 游戏下载") or []
+          if steam[:1] != ["DIRECT"]:
+              problems.append("「🎮 游戏下载」首位成员是 %r，必须是 DIRECT" % (steam[:1],))
+
+          # ---- (e) AI 组必须钉死 ----
+          ai = members(full, "💬 Ai平台") or []
+          if ai != ["🔒 AI专用"]:
+              problems.append("「💬 Ai平台」成员为 %r，必须仅指向「🔒 AI专用」" % (ai,))
+          if not (members(full, "🔒 AI专用") or []):
+              problems.append("「🔒 AI专用」没有匹配到任何节点 —— 检查 fleet/proxies.example.yaml 的节点名")
+
+          # ---- (f) 规则数量级 ----
+          stats = json.load(open("stats.json"))
+          rules = int(stats.get("rule_count") or 0)
+          if rules < 8000:
+              problems.append("规则数只有 %d 条（<8000）—— 疑有规则集未生效" % rules)
+
+          if problems:
+              for p in problems:
+                  print("::error::" + p)
+              sys.exit(1)
+          print("产物契约通过：规则 %d 条 / Steam 下载组首位 DIRECT / AI 组已钉死 / 模板无凭据" % rules)
+          PY
+
+      # ---------------------------------------------------------------------
+      #  7) META.json —— 机器侧靠它判断"要不要换"
+      # ---------------------------------------------------------------------
+      - name: Write META.json
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import datetime, hashlib, json, pathlib
+
+          def sha(p):
+              return hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()
+
+          rules_files = sorted(pathlib.Path("rules").glob("rule*.list"))
+          stats = json.load(open("stats.json"))
+          meta = {
+              "built_at_utc": datetime.datetime.now(datetime.timezone.utc)
+                                    .strftime("%Y-%m-%dT%H:%M:%SZ"),
+              "upstream_ini": {
+                  "url": "https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini",
+                  "sha256": sha("upstream.ini"),
+              },
+              "artifacts": {
+                  "template": {"file": "acl4ssr-game.template.yaml",
+                               "sha256": sha("fleet/acl4ssr-game.template.yaml")},
+                  "full_reference": {"file": "acl4ssr-game.full.yaml",
+                                     "sha256": sha("fleet/acl4ssr-game.full.yaml")},
+              },
+              "rulesets": {"count": len(rules_files),
+                           "sha256": {p.name: sha(p) for p in rules_files}},
+              "rule_count": int(stats.get("rule_count") or 0),
+              "group_count": int(stats.get("group_count") or 0),
+          }
+          pathlib.Path("fleet/META.json").write_text(
+              json.dumps(meta, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+              encoding="utf-8")
+          print("META.json: 规则 %d 条 / 规则集 %d 个 / ini=%s"
+                % (meta["rule_count"], meta["rulesets"]["count"],
+                   meta["upstream_ini"]["sha256"][:16]))
+          PY
+
+      - name: Commit if changed
+        run: |
+          set -euo pipefail
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$OUT_DIR"
+          if git diff --cached --quiet; then
+            echo "产物无变化，跳过提交"
+            exit 0
+          fi
+          git commit -m "chore(fleet): 重新构建机器侧订阅产物（$(date -u +%Y-%m-%d)）"
+
+          # ── 并发安全 ──────────────────────────────────────────────────────
+          # 本工作流被 schedule / push / workflow_dispatch 多个事件触发。
+          # 后启动的那次 checkout 到的是【它被触发那一刻】的 HEAD，而不是轮到它
+          # 执行时的 HEAD —— 中间若有另一次运行提交过，直接 push 会被
+          # non-fast-forward 拒绝，整次运行标红，而这种失败没有任何信息价值。
+          # 用 -X ours 而不是 rebase：提交的都是【生成物】，两边内容都"对"。
+          BRANCH="${GITHUB_REF_NAME:-main}"
+          for attempt in 1 2 3; do
+            if git fetch --quiet origin "$BRANCH"; then
+              git merge -X ours --no-edit FETCH_HEAD >/dev/null 2>&1 \
+                || git merge --abort >/dev/null 2>&1 || true
+            fi
+            if git push; then
+              echo "推送成功（第 $attempt 次尝试）"
+              exit 0
+            fi
+            echo "推送未成功，第 $attempt/3 次，5 秒后重试"
+            sleep 5
+          done
+          echo "::error::三次推送均失败"
+          exit 1
