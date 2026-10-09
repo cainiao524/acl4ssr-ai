@@ -55,7 +55,17 @@ readonly OUT_YAML="${SYNC_OUT:-${SUB_DIR}/acl4ssr-game.yaml}"
 readonly BACKUP_DIR="${SYNC_BACKUP_DIR:-/root}"
 
 # CI 产物地址（公开仓库；模板不含任何凭据）
-readonly REPO_RAW="${SYNC_REPO_RAW:-https://raw.githubusercontent.com/cainiao524/acl4ssr-ai/main/fleet}"
+#
+# ⚠️ 用 jsDelivr 而不是 raw.githubusercontent.com。
+#    raw 的 CDN 缓存窗口可以到几十分钟，实测撞过两次：
+#      * 模板已经是新版（36 组、没有登录组），raw 还在发旧版（37 组、有登录组）
+#        → 脚本报"逐字节一致，无需替换"，而线上其实没更新
+#      * 转换站那条线同样踩到（raw 旧 / jsDelivr 新）
+#    jsDelivr 对 GitHub 的同步更及时，且支持 @main 引用。
+#
+#    代价：多一个第三方依赖。可用 SYNC_REPO_RAW 覆盖，
+#    例如临时切回 raw：  SYNC_REPO_RAW=https://raw.githubusercontent.com/cainiao524/acl4ssr-ai/main/fleet
+readonly REPO_RAW="${SYNC_REPO_RAW:-https://cdn.jsdelivr.net/gh/cainiao524/acl4ssr-ai@main/fleet}"
 readonly TEMPLATE_URL="${REPO_RAW}/acl4ssr-game.template.yaml"
 readonly META_URL="${REPO_RAW}/META.json"
 
