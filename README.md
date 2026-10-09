@@ -190,6 +190,26 @@ custom_proxy_group=🇯🇵 日本节点`select`[]🇯🇵 日本 [SELF] xtls-re
 出口**恒定**为 REALITY（`select` 首位即默认项），两个协议都留在组里，
 需要时在客户端一键切 —— 不用改配置。
 
+> ⚠️ **两条线的写法故意不同，别去"统一"。**
+> 上面这段是 `assets/local-overlay.ini`（自建线：节点名由本机 sing-box 生成、
+> 不经过任何第三方）的写法 —— **显式列名字**。改名后 `acl4ssr_build.py` 会把它
+> 记进 `missing_group_refs`，属于「显式失败」。
+>
+> 而给**订阅转换站**用的 `build.py` 里，同样的组改用了**过滤器**：
+>
+> ```ini
+> custom_proxy_group=🇯🇵 日本节点`select`(\[SELF\].*xtls-reality)`(\[SELF\].*hysteria2)
+> ```
+>
+> 原因：转换站的 `append_type=true` 会给节点名插协议前缀，实际产出是
+> `🇯🇵 [VLESS] 日本 [SELF] xtls-reality`；而改名**只作用于节点名、
+> 不作用于组里写死的 `[]名字`** → 引用悬空 → 客户端报
+> `proxy group[3]: 日本节点: '🇯🇵 日本 [SELF] xtls-reality' not found`
+> 并**拒绝加载整份配置**（FlClash 上的真实事故）。
+> 过滤器里的 `.*` 跨过任何 `[TYPE]` 前缀，所以改名免疫；协议名仍是区分点，
+> 因此仍只命中一个节点、首位依旧恒定。
+> 对照组：「🔒 AI 专用」一直用的是过滤器 `[[]SELF[]]`，所以它从没出过这个问题。
+
 #### 为什么不再用 `fallback` / `url-test`
 
 这里曾经是 `fallback`（Hysteria2 优先、失效切 Reality）或上游默认的 `url-test`
