@@ -287,12 +287,17 @@ jobs:
               elif not mem:
                   problems.append("策略组 %s 没有成员" % grp)
 
-          # ---- (d) Steam 下载组首位必须是 DIRECT ----
-          # 这是 2026-10-09 修掉的坑：build_groups() 曾把内建策略 append 到末尾，
-          # 于是 ini 里 `[]DIRECT` 打头也变成"节点选择打头"，下载默认走代理吃流量。
-          steam = members(full, "🎮 游戏下载") or []
-          if steam[:1] != ["DIRECT"]:
-              problems.append("「🎮 游戏下载」首位成员是 %r，必须是 DIRECT" % (steam[:1],))
+          # ---- (d) Steam 全部 DIRECT ----
+          # 本机定位：VPS 只服务 AI 站点，Steam 一律不碰。
+          # 「🎮 Steam 商店/社区」的上游默认是「🚀 节点选择」= 走代理，
+          # 而且它的 DOMAIN-SUFFIX,steampowered.com 会把 login.* 一起吞掉 ——
+          # 所以这四个组都必须 DIRECT 优先，缺一条就红。
+          for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区", "🔑 Steam 登录"):
+              mem = members(full, grp) or []
+              if mem[:1] != ["DIRECT"]:
+                  problems.append("「%s」首位成员是 %r，必须是 DIRECT（Steam 不该走代理）"
+                                  % (grp, mem[:1]))
+          print("Steam 四组首位均为 DIRECT")
 
           # ---- (e) AI 组必须钉死，且只含【自建】节点 ----
           ai = members(full, "💬 Ai平台") or []
