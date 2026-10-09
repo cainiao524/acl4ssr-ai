@@ -169,7 +169,7 @@ def members(name):
     return None if not m else re.findall(r'^      - "(.+)"$', m.group(1), re.M)
 
 for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区",
-            "🔑 Steam 登录", "💬 Ai平台", "🔒 AI专用", "🚀 自建节点"):
+            "💬 Ai平台", "🔒 AI专用", "🚀 自建节点"):
     if members(grp) is None:
         problems.append("缺少策略组: %s" % grp)
     elif not members(grp):
