@@ -169,7 +169,7 @@ PINNED_GROUP_TEMPLATE = (
 )
 AUTO_SELECT_GROUPS = ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡")
 
-# ── Steam：下载直连、商店/社区/登录走节点 ───────────────────────────────────
+# ── Steam：下载直连、商店/社区走节点 ────────────────────────────────────────
 #
 # 上游三个 Steam 组里，「🎮 游戏下载」和「🎮 游戏平台」本就是 DIRECT 优先，
 # 这里把它们钉死不再变；「🎮 Steam 商店/社区」的「🚀 节点选择」**刻意保留** ——
@@ -177,22 +177,14 @@ AUTO_SELECT_GROUPS = ("♻️ 自动选择", "🔯 故障转移", "🔮 负载�
 #
 # 所以别把商店组改成 DIRECT：那不是"Steam 不碰 VPS"，而是"商店打不开"。
 # 真正减少 Steam 占用 VPS 的是【下载】（本来就是 DIRECT）。
+#
+# ℹ️ 曾经拆出过「🔑 Steam 登录」单独一组（为了单独控制登录出口），后来去掉了：
+#    登录域名回落到商店组的 DOMAIN-SUFFIX,steampowered.com，出口与商店一致，
+#    行为没有变化，少一个组少一处维护。
 STEAM_GROUPS = {
     "🎮 游戏下载": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
     "🎮 游戏平台": "[]DIRECT`[]🚀 节点选择`[]♻️ 自动选择`[]🔯 故障转移`[]🔮 负载均衡",
 }
-
-# 「🔑 Steam 登录」—— 上游没有这个组，由本脚本新增。
-# 目的不是"换出口"，而是让登录**能在客户端里单独控制**：
-# 商店打不开时切节点、想让登录走国区 IP 时切 DIRECT，互不影响。
-# 默认与商店组一致（走节点），避免行为突变。
-STEAM_LOGIN_GROUP = "custom_proxy_group=🔑 Steam 登录`select`[]🚀 节点选择`[]DIRECT"
-STEAM_LOGIN_RULES = [
-    "rules=DOMAIN,login.steampowered.com,🔑 Steam 登录",
-    "rules=DOMAIN,api.steampowered.com,🔑 Steam 登录",
-    "rules=DOMAIN,checkout.steampowered.com,🔑 Steam 登录",
-    "rules=DOMAIN,help.steampowered.com,🔑 Steam 登录",
-]
 
 BANNER = [
     "; " + "=" * 76,
@@ -338,11 +330,12 @@ def apply_patch(text: str):
             pinned += 1
     report["auto_select_pinned"] = pinned
 
-    # ---- patch 7: Steam 下载钉死 DIRECT + 新增「🔑 Steam 登录」组 -----------
+    # ---- patch 7: Steam 下载钉死 DIRECT ------------------------------------
     #
     #  下载/平台：DIRECT 优先（不占 VPS 流量，也不绕远路）
-    #  商店/社区：**不动** —— 上游的「🚀 节点选择」是对的，国内不给节点就打不开
-    #  登录：拆出独立组，默认跟商店组一致（走节点），但从此可单独控制
+    #  商店/社区：**不动** —— 上游的「🚀 节点选择」是对的，国内不给节点就打不开。
+    #            登录域名（login./api./checkout./help.）落在同一个
+    #            DOMAIN-SUFFIX,steampowered.com 上，出口与商店一致，无需单独分组。
     #
     # 缺「游戏下载」时 fail-closed：宁可报错，也不要静默留一份下载走代理的配置。
     steam_replaced = 0
@@ -358,20 +351,7 @@ def apply_patch(text: str):
             kept[i] = "custom_proxy_group=%s`select`%s" % (group_name, members)
             steam_replaced += 1
 
-    # 新增「🔑 Steam 登录」组：插在「🎮 Steam 商店/社区」之后，便于阅读
-    anchor = next((i for i, line in enumerate(kept)
-                   if re.match(r"^\s*custom_proxy_group\s*=\s*🎮 Steam 商店/社区`", line)), None)
-    kept.insert((anchor + 1) if anchor is not None else len(kept), STEAM_LOGIN_GROUP)
-
-    # 四条登录规则：插在第一条 ruleset= 之前，
-    # 保证排在 GameSteamWeb.list 的 DOMAIN-SUFFIX,steampowered.com 前面
-    first_ruleset = next((i for i, line in enumerate(kept)
-                          if re.match(r"^\s*ruleset\s*=", line)), len(kept))
-    for offset, rule in enumerate(STEAM_LOGIN_RULES):
-        kept.insert(first_ruleset + offset, rule)
-
     report["steam_download_direct"] = steam_replaced
-    report["steam_login_group_added"] = True
 
     # ---- 加文件头横幅 ----
     out = "\n".join(BANNER + [""] + kept)
