@@ -160,13 +160,23 @@ sniffer:                        # HTTP + TLS + QUIC 全开，保证 fake-ip 下�
 **怎么确认生效了**：生成配置后搜一下 `enhanced-mode` 是不是 `fake-ip`、`ipv6` 是不是 `false`。
 如果不是 → 换一个支持自定义 base 的转换站，或者改用 [Clash Verge](https://github.com/clash-verge-rev/clash-verge-rev) / mihomo 内核直接引用这份配置。
 
-### 5️⃣ Steam 三分流：来自底板，原样保留
+### 5️⃣ Steam 三分流：默认出口已修正为 DIRECT
 
 | 组 | 默认 | 说明 |
 |---|---|---|
-| `🎮 游戏下载` | **DIRECT** | 76 条 CDN，含 `dl.steam.clngaa.com` 等国内节点 —— 直连比走代理快得多 |
-| `🎮 Steam 商店/社区` | 节点选择 | 28 条，含 `steampowered.com` / `steamcommunity.com` / `steamstatic.com` |
+| `🎮 游戏下载` | **DIRECT** | 76 条 CDN，含 `dl.steam.clngaa.com` / `content.steamchina.com` 等国内节点 —— 直连比绕代理快得多，而且不会把几十 GB 下载计进流量 |
+| `🎮 Steam 商店/社区` | 节点选择 | 28 条，含 `steampowered.com` / `steamcommunity.com` / `steamstatic.com`（国内常被墙，**保持走节点**） |
 | `🎮 游戏平台` | **DIRECT** | Steam / Epic / Xbox / PlayStation / Nintendo … |
+| `🔑 Steam 登录` | 固定出口 | `login.` / `api.` / `checkout.` / `help.steampowered.com` 单独拆出，默认走固定节点（涉及账号状态，出口不漂） |
+
+> ⚠️ **"子分流里有 DIRECT" 不等于 "下载默认直连"。**
+> subconverter / ACL4SSR 的 select 组语义是「**第一项 = 默认选中项**」。
+> 底板原本把 `[]DIRECT` 放在成员末尾，于是默认出口是「🚀 节点选择」——
+> 配置看着完全正常，下载却整包走代理。
+> 本仓库的 `assets/local-overlay.ini` 把 DIRECT 提到首位；
+> 而**编译产物**（`fleet/`）里另有一层保证：`assets/acl4ssr_build.py` 的
+> `build_groups()` 按 ini 的**原始声明顺序**合并成员，不会再把内建策略
+> append 到末尾（这个 bug 曾让 ini 里写对了也没用，详见 `fleet/README-fleet.md`）。
 
 ---
 
@@ -269,6 +279,48 @@ custom_proxy_group=🔒 AI 专用`select`(AI|Claude|GPT|OpenAI|专用|专线|Ded
 **这样上游的规则改动会自动进来，而我们的 patch 始终只有那 3 行。**
 
 （做法和 `acl4ssr-steam` 自己维护游戏分流的方式一致。）
+
+### 同一天还有 `fleet.yml`：给机器用的「编译成品」
+
+`update.yml` 产出的是**给订阅转换站吃的 ini**（规则还没展开）。
+如果你有一台跑 mihomo / Clash 的机器，希望它**直接拿到展开好的完整配置**、
+且**规则更新不落在机器上**，那就是 `fleet.yml` 的活：
+
+```text
+.github/workflows/fleet.yml   每天 UTC 04:20
+  ├─ 拉上游 ini + 应用 assets/local-overlay.ini
+  ├─ fetch --force 下载全部 42 个规则集
+  ├─ 断言「rule<NN>.list ↔ ini 索引」一致（错配直接红）
+  ├─ 生成完整版 + 模板（--emit-template，proxies 段留注入标记）
+  ├─ mihomo -t 权威校验
+  └─ 断言产物契约（Steam 首位 DIRECT / AI 组钉死 / 模板无凭据）
+        ↓ 提交到 fleet/
+fleet/acl4ssr-game.template.yaml   规则+策略组+dns 完整，节点处是标记
+fleet/META.json                    上游 sha256 / 各规则集 sha256 / 规则数
+```
+
+机器侧只做「**下载 + 注入自己的节点 + 校验 + 原子替换**」：
+
+```bash
+bash scripts/sync-subscription.sh --dry-run   # 只校验，不落盘
+bash scripts/sync-subscription.sh             # 正式同步
+```
+
+> **为什么规则必须搬去 CI，不能留在机器上生成。**
+> 机器上的规则集是**持久化文件**：非空即复用，永不重下。上游 ini 的 ruleset
+> 列表一变，索引就整体位移，旧文件与新索引错配 —— 而所有自检只查
+> "非空 / 个数 / 条数"，于是错配**静默通过并每天重新编译一遍**。
+> 实测状态持续了 10 天：`rule14` 拿的是网易云音乐的规则、`rule15` 拿的是
+> GameDownload 的规则，导致「💬 Ai平台」被塞进 76 条游戏平台下载 CDN
+> （172 条里 117 条与 AI 无关），同时 **Anthropic / OpenAI 两个深度规则集
+> 一条都没进产物**，Steam 下载全部走代理。
+>
+> CI runner 每次都是全新机器：没有历史缓存、没有旧 `rule<NN>.list`。
+> **「不可能错配」由架构保证，而不是靠记得加 `--force`。**
+>
+> 节点凭据不进仓库（本仓库是公开的）：模板里只有 `@NODE_INJECT_POINT@` 标记，
+> 真实 uuid / public-key / password 永远留在机器上。
+
 
 ---
 
