@@ -280,7 +280,7 @@ jobs:
               return None if not m else re.findall(r'^      - "(.+)"$', m.group(1), re.M)
 
           for grp in ("🎮 游戏下载", "🎮 游戏平台", "🎮 Steam 商店/社区", "🔑 Steam 登录",
-                      "💬 Ai平台", "🔒 AI专用"):
+                      "💬 Ai平台", "🔒 AI专用", "🚀 自建节点"):
               mem = members(full, grp)
               if mem is None:
                   problems.append("完整版缺少策略组: %s" % grp)
@@ -294,14 +294,41 @@ jobs:
           if steam[:1] != ["DIRECT"]:
               problems.append("「🎮 游戏下载」首位成员是 %r，必须是 DIRECT" % (steam[:1],))
 
-          # ---- (e) AI 组必须钉死 ----
+          # ---- (e) AI 组必须钉死，且只含【自建】节点 ----
           ai = members(full, "💬 Ai平台") or []
           if ai != ["🔒 AI专用"]:
               problems.append("「💬 Ai平台」成员为 %r，必须仅指向「🔒 AI专用」" % (ai,))
-          if not (members(full, "🔒 AI专用") or []):
-              problems.append("「🔒 AI专用」没有匹配到任何节点 —— 检查 fleet/proxies.example.yaml 的节点名")
+          ai_nodes = members(full, "🔒 AI专用") or []
+          if not ai_nodes:
+              problems.append("「🔒 AI专用」没有匹配到任何节点 —— 检查 fleet/proxies.example.yaml 的节点名是否带 [SELF]")
+          # ---- (g) 自建 / 机场 隔离（2026-10-09 追加）----
+          # 这条断言防的是一次真实发生过的失效模式：AI 组原用地理正则
+          # (日本|JP|Japan) 过滤，机场节点一旦名字含「日本」就会被吸进来，
+          # 而 select 组首位即默认出口 —— AI 出口 IP 会当场变成机场节点。
+          # 现在边界改成节点名里的 [SELF] 标识，这里把它钉住。
+          if any("[SELF]" not in n for n in ai_nodes):
+              problems.append("「🔒 AI专用」含非自建节点（缺 [SELF]）: %s"
+                              % [n for n in ai_nodes if "[SELF]" not in n])
+          else:
+              print("AI 组只含自建节点: %s" % ai_nodes)
 
-          # ---- (f) 规则数量级 ----
+          self_nodes = members(full, "🚀 自建节点") or []
+          if not self_nodes or any("[SELF]" not in n for n in self_nodes):
+              problems.append("「🚀 自建节点」应为清一色 [SELF] 节点，实为 %s" % (self_nodes,))
+
+          jp = members(full, "🇯🇵 日本节点") or []
+          if any("[SELF]" not in n for n in jp):
+              problems.append("「🇯🇵 日本节点」混入非自建节点: %s"
+                              % [n for n in jp if "[SELF]" not in n])
+          if jp[:1] != ["🇯🇵 日本 [SELF] xtls-reality"]:
+              problems.append("「🇯🇵 日本节点」首位是 %r，应为自建 REALITY（钉死出口）" % (jp[:1],))
+
+          for g in ("♻️ 自动选择", "🔯 故障转移", "🔮 负载均衡"):
+              m = members(full, g) or []
+              if m != ["🇯🇵 日本 [SELF] xtls-reality"]:
+                  problems.append("「%s」= %r，应为单个自建 REALITY（防协议来回切）" % (g, m))
+
+          # ---- (h) 规则数量级 ----
           stats = json.load(open("stats.json"))
           rules = int(stats.get("rule_count") or 0)
           if rules < 8000:
