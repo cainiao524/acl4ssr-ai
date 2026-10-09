@@ -1,0 +1,36 @@
+# sb-oneclick-acl4ssr —— 每日同步 GitHub 构建好的订阅产物
+# =============================================================================
+#  这里跑的是【同步】，不是【生成】。
+#
+#  为什么改：原先是 `gen-acl4ssr.sh` 在本机拉上游 + 编译，而本机的规则集是
+#  持久化文件、非空就复用 —— rule<NN>.list 与 ini 索引错配后静默持续了 10 天，
+#  把 76 条游戏平台下载 CDN 塞进了「💬 Ai平台」，同时 Anthropic / OpenAI 两个
+#  深度规则集一条都没进产物。自检只查"非空 / 个数 / 条数"，全都没抓到。
+#
+#  现在：拉规则 + 编译 + mihomo -t 全在 GitHub Actions（.github/workflows/fleet.yml），
+#  runner 每次都是全新机器，没有历史缓存 → 结构上不可能错配。
+#  本机只负责【注入自己的节点】并原子替换。
+#
+#  时序：CI 每天 UTC 04:20 构建（含排队余量），本机 UTC 05:40 同步。
+#
+#  手工执行:
+#      bash /root/sb-oneclick/scripts/sync-subscription.sh --dry-run   # 只校验
+#      bash /root/sb-oneclick/scripts/sync-subscription.sh --force     # 强制替换
+#      tail -f /root/sb-oneclick/logs/sync-subscription.log
+#
+#  回退到旧行为（本机生成）:
+#      把下面这行注释掉，改回 gen-acl4ssr.sh；但请先读 README 的「产物同步」一节，
+#      旧路径需要 FORCE_FETCH=1 才不会再错配。
+# =============================================================================
+
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+40 5 * * * root /root/sb-oneclick/scripts/sync-subscription.sh >> /root/sb-oneclick/logs/sync-subscription.log 2>&1
+
+# --- 已停用（保留以便回退）---------------------------------------------------
+# 旧行为：本机拉上游 ini + 下载 42 个规则集 + 编译 YAML。
+# 它的问题不是"写错了"，而是【规则集文件是持久化缓存】：默认不带 --force，
+# 文件非空即复用，于是上游 ruleset 列表一变就会索引错位，且所有自检抓不到。
+# 若确需回退，必须带 FORCE_FETCH=1：
+# 35 5 * * * root FORCE_FETCH=1 /root/sb-oneclick/scripts/gen-acl4ssr.sh >> /root/sb-oneclick/logs/gen-acl4ssr.log 2>&1
