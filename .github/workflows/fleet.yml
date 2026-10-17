@@ -37,6 +37,8 @@ on:
       - "assets/acl4ssr_build.py"
       - "assets/overlay_merge.py"
       - "assets/local-overlay.ini"
+      - "base/ai-priority.list"
+      - "tests/test_ai_failclosed.py"
       - "fleet/proxies.example.yaml"
       - ".github/workflows/fleet.yml"
 
@@ -223,6 +225,11 @@ jobs:
           chmod +x /tmp/mihomo
           /tmp/mihomo -v | head -1
 
+      - name: Test AI fail-closed with real core
+        env:
+          MIHOMO_BIN: /tmp/mihomo
+        run: python -m unittest discover -s tests -v
+
       - name: Validate with mihomo -t
         run: |
           set -euo pipefail
@@ -336,14 +343,14 @@ jobs:
           if ai != ["🔒 AI专用"]:
               problems.append("「💬 Ai平台」成员为 %r，必须仅指向「🔒 AI专用」" % (ai,))
           ai_nodes = members(full, "🔒 AI专用") or []
-          if not ai_nodes:
+          if not ai_nodes or ai_nodes[-1] != "REJECT" or len(ai_nodes) < 2:
               problems.append("「🔒 AI专用」没有匹配到任何节点 —— 检查 fleet/proxies.example.yaml 的节点名是否带 [SELF]")
           # ---- (g) 自建 / 机场 隔离（2026-10-09 追加）----
           # 这条断言防的是一次真实发生过的失效模式：AI 组原用地理正则
           # (日本|JP|Japan) 过滤，机场节点一旦名字含「日本」就会被吸进来，
           # 而 select 组首位即默认出口 —— AI 出口 IP 会当场变成机场节点。
           # 现在边界改成节点名里的 [SELF] 标识，这里把它钉住。
-          if any("[SELF]" not in n for n in ai_nodes):
+          if any("[SELF]" not in n and n != "REJECT" for n in ai_nodes):
               problems.append("「🔒 AI专用」含非自建节点（缺 [SELF]）: %s"
                               % [n for n in ai_nodes if "[SELF]" not in n])
           else:

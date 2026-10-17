@@ -1,5 +1,16 @@
 # ACL4SSR Full · ClaudeAI MultiMode
 
+## AI 节点掉线保护（2026-10-18）
+
+AI 专用组只包含 `[SELF]` 自建节点和末尾的 `REJECT`。转换配置的 AI 平台入口不再引用通用手动切换组，避免该组为空或含直连选项时绕回 DIRECT。所选节点离线时请求失败；没有任何自建节点时组内保留 REJECT。REJECT 是显式拒绝选项，不是自动切换机制。`select` 本身不会因为所选节点离线而自动选择 DIRECT，旧文中的相关描述以本节为准。
+
+`base/ai-priority.list` 的 27 条规则置于所有其他 ruleset 之前；机器侧覆盖层使用相同的内联规则。补齐 Claude 核心域名、CDN、认证、遥测、客服依赖及 IP/ASN 兜底，同时保留 OpenAI/Azure 的优先匹配。规则参考 [Net.Coffee 域名表](https://ip.net.coffee/claude/site.html)。共享的 Sentry、Datadog、Sift、Intercom 域名也会走 AI 组；没有添加全系统 NTP 规则，因为 NTP 返回时间而非客户端时区。
+
+此保证适用于进入 Mihomo 且命中 AI 规则的请求；必须启用规则模式。关闭客户端、切到直连/全局模式或应用绕过代理，不属于订阅分流规则能够阻止的情况。升级订阅不会自动修改客户端模式或既有选择。没有 `[SELF]` 节点的用户需先配置自建节点，否则 AI 请求会被拒绝。
+
+验证：`python -m unittest discover -s tests -v`；设置 `MIHOMO_BIN` 可执行真实内核测试。测试只访问本机回环地址，先确认直连目标可达和代理成功，再停止代理，断言连续三次 AI 请求均失败且直连目标没有收到请求；另测空 AI 组。GitHub fleet 工作流在发布模板前执行这些测试。
+
+
 **为 Claude / ChatGPT 账号优化的 ACL4SSR 订阅转换配置，保留游戏平台（含 Steam）三分流。**
 
 底板是 [cainiao524/acl4ssr-steam](https://github.com/cainiao524/acl4ssr-steam) 的
@@ -57,8 +68,8 @@ custom_proxy_group=💬 Ai平台`select`[]🚀 节点选择`[]♻️ 自动选�
 **本仓库改成**：
 
 ```ini
-custom_proxy_group=💬 Ai平台`select`[]🔒 AI 专用`[]🚀 手动切换
-custom_proxy_group=🔒 AI 专用`select`[[]SELF[]]
+custom_proxy_group=💬 Ai平台`select`[]🔒 AI 专用`[]REJECT
+custom_proxy_group=🔒 AI 专用`select`[[]SELF[]]`[]REJECT
 ```
 
 - ✅ **没有** `自动选择` / `故障转移` / `负载均衡` → 不会漂
@@ -366,7 +377,7 @@ jd.com  → dbgjd.com                                          （第三方）
 `🔒 AI 专用` 按**节点名里的归属标识**匹配：
 
 ```ini
-custom_proxy_group=🔒 AI 专用`select`[[]SELF[]]
+custom_proxy_group=🔒 AI 专用`select`[[]SELF[]]`[]REJECT
 ```
 
 **这个过滤器命中你哪个节点，AI 流量就走哪个节点。** 而 `select` 组的

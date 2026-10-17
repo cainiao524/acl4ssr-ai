@@ -36,7 +36,7 @@
 #
 #     改成：
 #         custom_proxy_group=🔒 AI 专用`select`(AI|Claude|GPT|...)
-#         custom_proxy_group=💬 Ai平台`select`[]🔒 AI 专用`[]🚀 手动切换
+#         custom_proxy_group=💬 Ai平台`select`[]🔒 AI 专用`[]REJECT
 #
 #         * 没有「自动选择 / 故障转移 / 负载均衡」→ 不会漂
 #         * 没有 DIRECT → 节点全挂时直接失败（fail closed），你会立刻发现
@@ -131,8 +131,8 @@ AI_NODE_FILTER = "[[]SELF[]]"
 
 # 替换「💬 Ai平台」组定义（上游那一行会被整行替换掉）
 AI_GROUP_REPLACEMENT = [
-    "custom_proxy_group=💬 Ai平台`select`[]🔒 AI 专用`[]🚀 手动切换",
-    "custom_proxy_group=🔒 AI 专用`select`%s" % AI_NODE_FILTER,
+    "custom_proxy_group=💬 Ai平台`select`[]🔒 AI 专用`[]REJECT",
+    "custom_proxy_group=🔒 AI 专用`select`%s`[]REJECT" % AI_NODE_FILTER,
 ]
 
 # 自建节点在【转换站】手里会被改名 —— 所以下面所有"钉死自建节点"的组
@@ -541,7 +541,7 @@ def apply_patch(text: str):
     if any(line.strip() == priority_line for line in kept):
         report["ai_priority_ruleset"] = "already-present"
     else:
-        at = ms_ruleset_idx[0]
+        at = next(i for i, line in enumerate(kept) if line.strip().startswith("ruleset="))
         kept.insert(at, priority_line)
         report["ai_priority_ruleset"] = "inserted-before:%s" % kept[at + 1].strip()[:60]
 

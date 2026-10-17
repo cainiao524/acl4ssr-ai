@@ -1649,7 +1649,7 @@ def build_groups(parsed: dict, proxy_names, stats: dict):
                 "interval": 300,
                 "tolerance": 50,
                 "children": [],
-                "builtins": ["DIRECT"],
+                "builtins": ["REJECT"],
                 "filters": [],
                 "bad_regex": [],
             }
