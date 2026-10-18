@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| 最近巡检 | 2026-10-17 17:26 UTC |
+| 最近巡检 | 2026-10-18 02:04 UTC |
 | 巡检脚本 | `check.py` v1.0.0 |
 | 被引用规则集 | **43** 条 |
 | 不可达 | **0** 条 |
@@ -24,7 +24,7 @@
 
 | 策略组 | URL | HTTP | 大小 |
 |---|---|---|---|
-| `💬 Ai平台` | `cainiao524/acl4ssr-ai/main/base/ai-priority.list` | 200 | 0.0 KB |
+| `💬 Ai平台` | `cainiao524/acl4ssr-ai/main/base/ai-priority.list` | 200 | 0.8 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list` | 200 | 1.2 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/UnBan.list` | 200 | 1.0 KB |
 | `🛑 广告拦截` | `ACL4SSR/ACL4SSR/master/Clash/BanAD.list` | 200 | 15.2 KB |
