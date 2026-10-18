@@ -87,6 +87,12 @@ class AiRuntimeTests(unittest.TestCase):
 
         def handler(kind):
             class Handler(BaseHTTPRequestHandler):
+                def do_CONNECT(self):
+                    # Mihomo's HTTP outbound tunnels even plain HTTP requests.
+                    self.send_response(200)
+                    self.end_headers()
+                    self.close_connection = False
+
                 def do_GET(self):
                     hits[kind] += 1
                     body = kind.encode()
@@ -152,7 +158,10 @@ class AiRuntimeTests(unittest.TestCase):
                             self.assertEqual(request('control.test'), (200, b'target'))
                             before = hits['target']
                             if not empty:
-                                self.assertEqual(request('claude.test'), (200, b'proxy'))
+                                result = request('claude.test')
+                                log.flush()
+                                log.seek(0)
+                                self.assertEqual(result, (200, b'proxy'), log.read())
                                 upstream.shutdown()
                                 upstream.server_close()
                                 upstream_stopped = True

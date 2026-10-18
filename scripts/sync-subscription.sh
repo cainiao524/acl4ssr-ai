@@ -199,7 +199,9 @@ if ai != ["🔒 AI专用"]:
 # AI 出口 IP 会悄悄变成机场节点。对 Claude / ChatGPT 账号，这是头号封号信号。
 # 边界现在是节点名里的 [SELF]（归属标识），这里把它钉死。
 ai_nodes = members("🔒 AI专用") or []
-bad = [n for n in ai_nodes if "[SELF]" not in n]
+if not ai_nodes or ai_nodes[-1] != "REJECT":
+    problems.append("「🔒 AI专用」缺少末尾 REJECT 兜底")
+bad = [n for n in ai_nodes if "[SELF]" not in n and n != "REJECT"]
 if bad:
     problems.append("「🔒 AI专用」含非自建（缺 [SELF]）节点: %s —— 机场节点可能已污染 AI 出口" % bad)
 
