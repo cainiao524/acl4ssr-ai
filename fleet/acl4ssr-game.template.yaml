@@ -1,10 +1,10 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-10-18T08:54:35Z
+# 生成时间(UTC): 2026-10-19T10:00:19Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
-# 策略组 36 个 / 节点 2 个 / 规则 10959 条（规则与节点均为内联，无在线依赖）
+# 策略组 36 个 / 节点 2 个 / 规则 10960 条（规则与节点均为内联，无在线依赖）
 #
 # 三大坑处理说明：
 #   坑1 URL-REGEX 等旧版 Clash 类型：按 mihomo v1.19.x 类型白名单过滤，已丢弃 12 条
@@ -2503,6 +2503,7 @@ rules:
   - "DOMAIN-SUFFIX,oaistatsig.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,observeit.net,💬 Ai平台"
   - "DOMAIN-SUFFIX,openai.com.cdn.cloudflare.net,💬 Ai平台"
+  - "DOMAIN-SUFFIX,openai.org,💬 Ai平台"
   - "DOMAIN-SUFFIX,segment.io,💬 Ai平台"
   - "DOMAIN-SUFFIX,turn.livekit.cloud,💬 Ai平台"
   - "DOMAIN-REGEX,^chatgpt-async-webps-prod-\\S+-\\d+\\.webpubsub\\.azure\\.com$,💬 Ai平台"
