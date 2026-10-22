@@ -2,16 +2,16 @@
   "artifacts": {
     "full_reference": {
       "file": "acl4ssr-game.full.yaml",
-      "sha256": "e1ee68cf4a10f56fc700a67b2104d628e8e0313b9a088a2647753d5d19b62bd4"
+      "sha256": "d3e0839804dcc2f26144272a8eb50da2e25a86c6d25d18556b0da9417835a6e4"
     },
     "template": {
       "file": "acl4ssr-game.template.yaml",
-      "sha256": "c480163dfc9357e2ff913eded1dfd030db97a22fdd7247c1c55c034e2d3b4b27"
+      "sha256": "5a10470b44ac3b78b843effc07cb7b029b9adfc39163ad0c2a53e4324889dc16"
     }
   },
-  "built_at_utc": "2026-10-20T09:29:34Z",
+  "built_at_utc": "2026-10-22T09:28:30Z",
   "group_count": 36,
-  "rule_count": 10959,
+  "rule_count": 10962,
   "rulesets": {
     "count": 42,
     "sha256": {
@@ -28,7 +28,7 @@
       "rule11.list": "483f613b31a1c054ddfffa6584b449f4447944ea58b8c1fc06b67eb13c09db89",
       "rule12.list": "63e70895ac8c04c3b28965dc0b4ba9ceb3a1313a66b49487ed96005debc97e1e",
       "rule13.list": "c4f839e4dda6cb96e4373349c72b4e5f848b8ae03564c0d0eae0873955310129",
-      "rule14.list": "f1d4b6057b71688b3dbd11e4fee222cf48e3ba48d3de736223f33fd755c116c5",
+      "rule14.list": "744b9c24c8956dafeb21f67c78dbf56cecedbad85e705da3edf17177533f66fb",
       "rule15.list": "d40dd0c1757601facb81e853ee31165864e90fb02dd034338a32de8db4c3f581",
       "rule16.list": "8254e2518082103b7b3f88063562cefc3e04350b74aa411aad0ee4a66e8a9338",
       "rule17.list": "9b31b32663d4e38cada177af76dcdef92121ea6bbfab48974a0c4fb914546cf0",
