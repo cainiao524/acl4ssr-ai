@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| 最近巡检 | 2026-10-23 09:13 UTC |
+| 最近巡检 | 2026-10-24 08:46 UTC |
 | 巡检脚本 | `check.py` v1.0.0 |
 | 被引用规则集 | **43** 条 |
 | 不可达 | **0** 条 |
@@ -43,7 +43,7 @@
 | `🎶 网易音乐` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/NetEaseMusic.list` | 200 | 1.3 KB |
 | `🎮 游戏下载` | `cainiao524/acl4ssr-steam/main/rules/GameDownload.list` | 200 | 2.7 KB |
 | `🎮 Steam 商店/社区` | `cainiao524/acl4ssr-steam/main/rules/GameSteamWeb.list` | 200 | 1.1 KB |
-| `🎮 游戏平台` | `blackmatrix7/ios_rule_script/master/rule/Clash/Steam/Steam.list` | 200 | 2.0 KB |
+| `🎮 游戏平台` | `blackmatrix7/ios_rule_script/master/rule/Clash/Steam/Steam.list` | 200 | 2.5 KB |
 | `🎮 游戏平台` | `blackmatrix7/ios_rule_script/master/rule/Clash/SteamCN/SteamCN.list` | 200 | 0.6 KB |
 | `🎮 游戏平台` | `blackmatrix7/ios_rule_script/master/rule/Clash/Epic/Epic.list` | 200 | 0.6 KB |
 | `🎮 游戏平台` | `blackmatrix7/ios_rule_script/master/rule/Clash/EA/EA.list` | 200 | 5.2 KB |
