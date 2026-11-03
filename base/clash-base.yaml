@@ -48,18 +48,8 @@ log-level: info
 # ---------------------------------------------------------------------------
 # fake-ip 下大部分连接的目标地址已经是 198.18.x.x，规则要能按【域名】命中，
 # 就必须靠嗅探从 TLS SNI / HTTP Host / QUIC 里把域名还原出来。
-# TUN is enabled in FlClash UI, not here, to avoid conflicting with Android VPN.
-# These options apply if the frontend respects the TUN section.
-tun:
-  enable: false
-  stack: mixed
-  auto-route: true
-  auto-detect-interface: true
-  strict-route: true
-  dns-hijack:
-    - any:53
-    - tcp://any:53
-
+# TUN/VPN is managed by FlClash separately on Windows and Android.
+# Never hardcode tun.enable here: frontend overrides vary across platforms.
 sniffer:
   enable: true
   force-dns-mapping: true
