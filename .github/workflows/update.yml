@@ -16,6 +16,11 @@ on:
     paths:                  # patch 变了就立刻重建，不用等到第二天
       - build.py
       - base/ai-priority.list
+      - base/clash-base.yaml
+      - ACL4SSR_ClaudeAI_Simple.ini
+      - assets/acl4ssr_build.py
+      - assets/local-overlay.ini
+      - docs/FlClash-Privacy.md
       - tests/test_ai_failclosed.py
       - .github/workflows/update.yml
 

@@ -1,3 +1,5 @@
+> **推荐（FlClash / Mihomo）**：使用精简订阅配置 [ACL4SSR_ClaudeAI_Simple.ini](./ACL4SSR_ClaudeAI_Simple.ini)；覆盖 Claude/OpenAI 专用出口、境外 DoH、Steam 三分流。Windows/Android 防 DNS 与 WebRTC 泄漏操作说明：[FlClash 隐私配置指南](./docs/FlClash-Privacy.md)。现有 Full 配置与 fleet 仍保留兼容，避免影响已部署订阅。
+
 # ACL4SSR Full · ClaudeAI MultiMode
 
 ## AI 节点掉线保护（2026-10-18）
