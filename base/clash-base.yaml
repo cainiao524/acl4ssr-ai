@@ -48,6 +48,18 @@ log-level: info
 # ---------------------------------------------------------------------------
 # fake-ip 下大部分连接的目标地址已经是 198.18.x.x，规则要能按【域名】命中，
 # 就必须靠嗅探从 TLS SNI / HTTP Host / QUIC 里把域名还原出来。
+# TUN is enabled in FlClash UI, not here, to avoid conflicting with Android VPN.
+# These options apply if the frontend respects the TUN section.
+tun:
+  enable: false
+  stack: mixed
+  auto-route: true
+  auto-detect-interface: true
+  strict-route: true
+  dns-hijack:
+    - any:53
+    - tcp://any:53
+
 sniffer:
   enable: true
   force-dns-mapping: true
@@ -71,6 +83,7 @@ sniffer:
 dns:
   # ⚠️ 是 enable，不是 enabled —— 拼错整段 DNS 会静默失效
   enable: true
+  ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
 
@@ -113,29 +126,86 @@ dns:
       - "https://doh.pub/dns-query"
       - "https://dns.alidns.com/dns-query"
     "+.claude.ai":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.anthropic.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.claude.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.clau.de":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.app":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.dev":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.new":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.site":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudepages.dev":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.claudeusercontent.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudemcpclient.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudemcpcontent.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudeacademy.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudestudio.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.statsigapi.net":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.sentry.io":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.intercom.io":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.intercomcdn.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.openai.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.chatgpt.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.oaistatic.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.oaiusercontent.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "browser-intake-us5-datadoghq.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "cdn.usefathom.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "servd-anthropic-website.b-cdn.net":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "anthropic.com.cdn.cloudflare.net":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "anthropic-com.ghost.io":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
 
   # respect-rules 打开时【必须】有 proxy-server-nameserver，否则 mihomo 起不来
   proxy-server-nameserver:
@@ -146,8 +216,8 @@ dns:
   #    命中 fallback 的域名每次新建连接都要干等约 5 秒；同时把
   #    「本机正向境外 DNS 发加密查询」这一元数据暴露给本地 ISP。
   fallback:
-    - "https://1.1.1.1/dns-query"
-    - "https://8.8.8.8/dns-query"
+    - "https://1.1.1.1/dns-query#🚀 节点选择"
+    - "https://8.8.8.8/dns-query#🚀 节点选择"
   fallback-filter:
     geoip: true
     geoip-code: CN
