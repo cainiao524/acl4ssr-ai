@@ -282,8 +282,12 @@ DOMESTIC_DOH = [
 # respect-rules 为 false 时直连 DoT 从物理网卡出去，国内必被墙，
 # 每次新建连接干等约 5 秒，且把「本机向境外 DNS 发加密查询」暴露给本地 ISP。
 OVERSEAS_DOH = [
-    "https://1.1.1.1/dns-query",
-    "https://8.8.8.8/dns-query",
+    "https://1.1.1.1/dns-query#🚀 节点选择",
+    "https://8.8.8.8/dns-query#🚀 节点选择",
+]
+AI_DOH = [
+    "https://1.1.1.1/dns-query#💬 Ai平台",
+    "https://8.8.8.8/dns-query#💬 Ai平台",
 ]
 
 # ---------------------------------------------------------------------------
@@ -329,14 +333,33 @@ FAKE_IP_FILTER = [
 # 显式把 AI 域名钉到境外 DoH：解析更干净，也避免国内 DoH 被投毒时无兜底。
 NAMESERVER_POLICY = [
     ("+.cn", DOMESTIC_DOH),
-    ("+.claude.ai", OVERSEAS_DOH),
-    ("+.anthropic.com", OVERSEAS_DOH),
-    ("+.claude.com", OVERSEAS_DOH),
-    ("+.claudeusercontent.com", OVERSEAS_DOH),
-    ("+.openai.com", OVERSEAS_DOH),
-    ("+.chatgpt.com", OVERSEAS_DOH),
-    ("+.oaistatic.com", OVERSEAS_DOH),
-    ("+.oaiusercontent.com", OVERSEAS_DOH),
+    ("+.claude.ai", AI_DOH),
+    ("+.anthropic.com", AI_DOH),
+    ("+.claude.com", AI_DOH),
+    ("+.clau.de", AI_DOH),
+    ("+.claude.app", AI_DOH),
+    ("+.claude.dev", AI_DOH),
+    ("+.claude.new", AI_DOH),
+    ("+.claude.site", AI_DOH),
+    ("+.claudepages.dev", AI_DOH),
+    ("+.claudeusercontent.com", AI_DOH),
+    ("+.claudemcpclient.com", AI_DOH),
+    ("+.claudemcpcontent.com", AI_DOH),
+    ("+.claudeacademy.com", AI_DOH),
+    ("+.claudestudio.com", AI_DOH),
+    ("+.statsigapi.net", AI_DOH),
+    ("+.sentry.io", AI_DOH),
+    ("+.intercom.io", AI_DOH),
+    ("+.intercomcdn.com", AI_DOH),
+    ("+.openai.com", AI_DOH),
+    ("+.chatgpt.com", AI_DOH),
+    ("+.oaistatic.com", AI_DOH),
+    ("+.oaiusercontent.com", AI_DOH),
+    ("browser-intake-us5-datadoghq.com", AI_DOH),
+    ("cdn.usefathom.com", AI_DOH),
+    ("servd-anthropic-website.b-cdn.net", AI_DOH),
+    ("anthropic.com.cdn.cloudflare.net", AI_DOH),
+    ("anthropic-com.ghost.io", AI_DOH),
 ]
 
 # 全局严禁出现在产物里的字符串（含坑 2 与严禁的直连 DoT）
@@ -2093,6 +2116,7 @@ def build_yaml(args, parsed: dict, nodes, groups, rules, final_policy, stats) ->
     out.append("dns:")
     out.append("# 注意是 enable 不是 enabled —— 拼错整段 DNS 会静默失效（坑点）")
     out.append("  enable: true")
+    out.append("  ipv6: false")
     out.append("  enhanced-mode: fake-ip")
     out.append("  fake-ip-range: 198.18.0.1/16")
     out.append("  fake-ip-filter:")
