@@ -1,7 +1,7 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-11-02T12:34:28Z
+# 生成时间(UTC): 2026-11-03T05:57:34Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
 # 策略组 36 个 / 节点 2 个 / 规则 10980 条（规则与节点均为内联，无在线依赖）
@@ -48,6 +48,7 @@ sniffer:
 dns:
 # 注意是 enable 不是 enabled —— 拼错整段 DNS 会静默失效（坑点）
   enable: true
+  ipv6: false
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   fake-ip-filter:
@@ -81,36 +82,93 @@ dns:
       - "https://doh.pub/dns-query"
       - "https://dns.alidns.com/dns-query"
     "+.claude.ai":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.anthropic.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.claude.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.clau.de":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.app":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.dev":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.new":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claude.site":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudepages.dev":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.claudeusercontent.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudemcpclient.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudemcpcontent.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudeacademy.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.claudestudio.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.statsigapi.net":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.sentry.io":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.intercom.io":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "+.intercomcdn.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.openai.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.chatgpt.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.oaistatic.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
     "+.oaiusercontent.com":
-      - "https://1.1.1.1/dns-query"
-      - "https://8.8.8.8/dns-query"
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "browser-intake-us5-datadoghq.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "cdn.usefathom.com":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "servd-anthropic-website.b-cdn.net":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "anthropic.com.cdn.cloudflare.net":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
+    "anthropic-com.ghost.io":
+      - "https://1.1.1.1/dns-query#💬 Ai平台"
+      - "https://8.8.8.8/dns-query#💬 Ai平台"
 # respect-rules 打开时【必须】有 proxy-server-nameserver，否则 mihomo 起不来
   proxy-server-nameserver:
     - "https://doh.pub/dns-query"
 # fallback 只用境外【加密 DoH】；严禁 tls:// 直连 DoT（原因见文件头）
   fallback:
-    - "https://1.1.1.1/dns-query"
-    - "https://8.8.8.8/dns-query"
+    - "https://1.1.1.1/dns-query#🚀 节点选择"
+    - "https://8.8.8.8/dns-query#🚀 节点选择"
   fallback-filter:
     geoip: true
     geoip-code: CN
@@ -519,24 +577,30 @@ rules:
   - "DOMAIN-SUFFIX,claude.ai,💬 Ai平台"
   - "DOMAIN-SUFFIX,claude.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,clau.de,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claude.app,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claude.dev,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claude.new,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claude.site,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claudepages.dev,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claudeusercontent.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,claudemcpclient.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,claudemcpcontent.com,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claudeusercontent.com,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claudeacademy.com,💬 Ai平台"
+  - "DOMAIN-SUFFIX,claudestudio.com,💬 Ai平台"
   - "DOMAIN,servd-anthropic-website.b-cdn.net,💬 Ai平台"
   - "DOMAIN,anthropic.com.cdn.cloudflare.net,💬 Ai平台"
-  - "DOMAIN,anthropic.auth0.com,💬 Ai平台"
   - "DOMAIN,anthropic-com.ghost.io,💬 Ai平台"
-  - "DOMAIN-SUFFIX,sentry.io,💬 Ai平台"
   - "DOMAIN-SUFFIX,statsigapi.net,💬 Ai平台"
   - "DOMAIN,browser-intake-us5-datadoghq.com,💬 Ai平台"
   - "DOMAIN-KEYWORD,datadog,💬 Ai平台"
+  - "DOMAIN-SUFFIX,sentry.io,💬 Ai平台"
   - "DOMAIN-KEYWORD,sentry,💬 Ai平台"
   - "DOMAIN-KEYWORD,sift,💬 Ai平台"
   - "DOMAIN-SUFFIX,intercom.io,💬 Ai平台"
   - "DOMAIN-SUFFIX,intercomcdn.com,💬 Ai平台"
   - "DOMAIN,cdn.usefathom.com,💬 Ai平台"
-  - "IP-CIDR,160.79.104.0/21,💬 Ai平台"
-  - "IP-CIDR6,2607:6bc0::/32,💬 Ai平台"
+  - "IP-CIDR,160.79.104.0/23,💬 Ai平台"
+  - "IP-CIDR6,2607:6bc0::/48,💬 Ai平台"
   - "PROCESS-NAME-REGEX,(?i)claude,💬 Ai平台"
   - "PROCESS-PATH-REGEX,(?i)claude,💬 Ai平台"
   - "PROCESS-NAME-REGEX,(?i)chatgpt,💬 Ai平台"
@@ -2467,11 +2531,6 @@ rules:
   - "DOMAIN-SUFFIX,stripe.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,anthropic.com.cn,💬 Ai平台"
   - "DOMAIN-SUFFIX,antspace.dev,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claude.app,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claude.new,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claude.site,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claudepages.dev,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claudestudio.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,modelcontextprotocol.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,modelcontextprotocol.io,💬 Ai平台"
   - "DOMAIN-SUFFIX,modelcontextprotocol.net,💬 Ai平台"
@@ -2483,13 +2542,12 @@ rules:
   - "PROCESS-NAME,cowork-svc.exe,💬 Ai平台"
   - "IP-CIDR,160.79.104.0/21,💬 Ai平台,no-resolve"
   - "IP-CIDR6,2607:6bc0::/32,💬 Ai平台,no-resolve"
+  - "DOMAIN,anthropic.auth0.com,💬 Ai平台"
   - "DOMAIN,cdn.growthbook.io,💬 Ai平台"
   - "DOMAIN,storage.googleapis.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,ant.dev,💬 Ai平台"
   - "DOMAIN-SUFFIX,anthropic.team,💬 Ai平台"
   - "DOMAIN-SUFFIX,chatbotclaude.com,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claude.dev,💬 Ai平台"
-  - "DOMAIN-SUFFIX,claudeacademy.com,💬 Ai平台"
   - "DOMAIN-SUFFIX,interface.feedback,💬 Ai平台"
   - "DOMAIN-SUFFIX,lcicat.org,💬 Ai平台"
   - "DOMAIN-SUFFIX,lcicollections.org,💬 Ai平台"
