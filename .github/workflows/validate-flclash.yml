@@ -1,0 +1,67 @@
+name: validate-flclash
+on:
+  pull_request:
+    paths:
+      - 'ACL4SSR_ClaudeAI_Simple.ini'
+      - 'base/**'
+      - 'assets/**'
+      - 'build.py'
+      - 'tests/**'
+      - 'docs/FlClash-Privacy.md'
+      - '.github/workflows/validate-flclash.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --quiet pyyaml
+      - name: Syntax and unit tests
+        run: |
+          python -m compileall -q build.py assets tests
+          python -m unittest discover -s tests -v
+      - name: Simple INI, DNS and AI fail-closed invariants
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+          ini = Path('ACL4SSR_ClaudeAI_Simple.ini').read_text('utf-8')
+          ai = Path('base/ai-priority.list').read_text('utf-8')
+          overlay = Path('assets/local-overlay.ini').read_text('utf-8')
+          base = yaml.safe_load(Path('base/clash-base.yaml').read_text('utf-8'))
+          groups = [l for l in ini.splitlines() if l.startswith('custom_proxy_group=')]
+          refs = [l for l in ini.splitlines() if l.startswith('ruleset=') and 'http' in l]
+          assert len(groups) == 11, len(groups)
+          assert len(refs) == 29, len(refs)
+          dedicated = next(l for l in groups if l.startswith('custom_proxy_group=🔒 AI 专用'))
+          assert '[[]SELF[]]' in dedicated and '[]REJECT' in dedicated
+          assert '[]DIRECT' not in dedicated and 'url-test' not in dedicated
+          ai_entry = next(l for l in groups if l.startswith('custom_proxy_group=💬 Ai平台'))
+          assert '[]🔒 AI 专用' in ai_entry and '[]DIRECT' not in ai_entry
+          assert '160.79.104.0/23' in ai and '2607:6bc0::/48' in ai
+          assert '160.79.104.0/21' not in ai and '2607:6bc0::/32' not in ai
+          for line in ai.splitlines():
+              if not line or line.startswith('#'): continue
+              parts = line.split(',')
+              parts.insert(2, '💬 Ai平台')
+              assert 'rules=' + ','.join(parts) in overlay, line
+          assert base.get('ipv6') is False
+          assert base['dns']['enable'] is True
+          assert base['dns']['ipv6'] is False
+          assert base['dns']['respect-rules'] is True
+          assert base['dns']['enhanced-mode'] == 'fake-ip'
+          for domain in ['+.claude.ai','+.anthropic.com','+.clau.de',
+                         '+.claudemcpclient.com','+.openai.com',
+                         '+.chatgpt.com','browser-intake-us5-datadoghq.com']:
+              servers = base['dns']['nameserver-policy'][domain]
+              assert all('#💬 Ai平台' in s for s in servers), (domain, servers)
+          assert 'tun' not in base, 'TUN must be managed by FlClash UI'
+          assert ini.index('ruleset=💬 Ai平台') < ini.index('ruleset=🎯 全球直连')
+          assert ini.index('ruleset=🎮 游戏下载') < ini.index('ruleset=🎮 Steam 商店/社区')
+          print('FlClash simple INI / AI / DNS policy checks passed')
+          PY
