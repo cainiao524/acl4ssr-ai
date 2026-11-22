@@ -2,32 +2,32 @@
   "artifacts": {
     "full_reference": {
       "file": "acl4ssr-game.full.yaml",
-      "sha256": "a359aa060fa7fbc3d1802a4f3fcff4ee0799a4bbb5befb6d598c36503f0f2862"
+      "sha256": "31c35396ca333aa8f433fb844f7dcef2f69629b2e76a60ce0667ae9136a2c189"
     },
     "template": {
       "file": "acl4ssr-game.template.yaml",
-      "sha256": "738b8aeed7ce69e1378e4c62afac75774a939af2d94ca1cc4723bf5639b315f0"
+      "sha256": "9ceddbc5b4537a3b34aa3b0f93500ec5958083ef36f3897990459f8cbd3a8e10"
     }
   },
-  "built_at_utc": "2026-11-21T12:45:50Z",
+  "built_at_utc": "2026-11-22T12:40:20Z",
   "group_count": 36,
-  "rule_count": 10979,
+  "rule_count": 11302,
   "rulesets": {
     "count": 42,
     "sha256": {
       "rule01.list": "0789504d97d8f5b14513c529c61c06f4f862c5cfd20f7cb30bbcd38357e54468",
       "rule02.list": "016837560f1f0eeb576f81600c95b547bd82e27ba27a175a3b5010de9bd18ffa",
-      "rule03.list": "27a5f6d018d428409d8da5d9f390a46298d505ae4941bb8172f052055abe7262",
+      "rule03.list": "110117815a28fba39adcd32da1c6cf2c8b61b4a8e910ef5afdf965647bdc72a9",
       "rule04.list": "35cefd7a4c01d2efa9b4c7928e21caa348f78a3f60b46d7d850f1e3334a5a766",
-      "rule05.list": "f115f84bef66a5aa931fd20f23d6914cdfdfe3d07795d65549d578b91a0f0c48",
+      "rule05.list": "f8dfe46062778746deba764cff47661a98ece8176a58d3e4898bdfdf87c529d9",
       "rule06.list": "00ffcc16d0eb1898cba4f9c2cc2ce76a8f70bef7a03aea436dad79982b77c8ca",
       "rule07.list": "b847948e128a0fc882e602c576f87334f7ebd67bbf4e6e3d25e93e28a5b1aeba",
       "rule08.list": "798fe9b6ed2920a7caa5b75eb44a2e41e464878ff87b38ec962cc2ec13d8be3c",
       "rule09.list": "b502566c1b86d5512111bd4a2bb5d808eda4e36aad3009a3ca05da354c09449e",
       "rule10.list": "7b2e60cd0bf3c4bfb1369890d39cc3783bdfcb016089b78acee0ff6f0d4e51c5",
       "rule11.list": "483f613b31a1c054ddfffa6584b449f4447944ea58b8c1fc06b67eb13c09db89",
-      "rule12.list": "63e70895ac8c04c3b28965dc0b4ba9ceb3a1313a66b49487ed96005debc97e1e",
-      "rule13.list": "c4f839e4dda6cb96e4373349c72b4e5f848b8ae03564c0d0eae0873955310129",
+      "rule12.list": "82a8806f260c92b605f7a6abd2a0f20b79239cba4b578773b2f93151ac3e971b",
+      "rule13.list": "3fde01190c82d9911cb247d99e941cb3b8e53c410e574240bc7d2a9227b153ab",
       "rule14.list": "178fd774e65e223c6a9a2d282094c5b7922cbcc2f5e670fb27f62db8ac8c4560",
       "rule15.list": "d40dd0c1757601facb81e853ee31165864e90fb02dd034338a32de8db4c3f581",
       "rule16.list": "8254e2518082103b7b3f88063562cefc3e04350b74aa411aad0ee4a66e8a9338",
@@ -46,14 +46,14 @@
       "rule29.list": "03b90246ad58c5cd95cce3a58deee14f6707b0e6a46f8d0766df38d2d8cefcf9",
       "rule30.list": "87bb7c0453f02fe8b409c0fd4118a97e03885d204541a6b791ecadceefeeb754",
       "rule31.list": "a0b4c51a829c8b85c4ebcab0400d5c55469f76aaeacfb39cdfeb64d92225fe47",
-      "rule32.list": "5e9d81d4615d993fb899d11f761ff5272465bf11e52233c656c3c3e4ab9cd800",
-      "rule33.list": "eb09e16b5aa228230e5770bfc04f2eb25261454a0b2e16f05fd3e9d2ab5202b5",
-      "rule34.list": "5c2b875abd3cec4d11612af639163a9b9f68c5828ad42793e7f21bc50f75169c",
+      "rule32.list": "698d3112095ac6301b1f8c531da539498a2466d0f5d53f7ab8ded55ef14295bf",
+      "rule33.list": "f1395e46cefae2e4a57ea7ca2dd442dc98bc9204886310e401215dc70bea387c",
+      "rule34.list": "b308f53b6ccdb5a1dd092fe08c7f6e1197c7168b2d1e20f1f73d5a7499540a2f",
       "rule35.list": "074d94bc66219f7a229a0ddc7150e3befb088b4fbbe3312dc3f95456b2fef96c",
-      "rule36.list": "3d111a3c69cb332cdec9c6283acbc9e0c17a62cc25abf43a3390e1667c6861dc",
-      "rule37.list": "69c437c641bbbea0001f33ecf6e8a6333a72f53d537b19ac9fd564d6927a2b21",
-      "rule38.list": "fe886c6f537c0214446018f3f64291db8d500c58877d180d2a21a78c19c499e1",
-      "rule39.list": "72d5f97cb3adedd7ef632962effda4aa3b9953da20427cd6050d55d1184de5ea",
+      "rule36.list": "9986f6a9365805d18d28d447d79ca2abddfb77ee5177490af979ed4bf7ce26a2",
+      "rule37.list": "a18ec9b9755fecb29ad2cb3ba73ad87b3d5db855d3947ef3811fd490f0904b0a",
+      "rule38.list": "5b6c7a07457e8a9cffd7a7a9865abfef72920b70a9ca987009710a44ccc98781",
+      "rule39.list": "537c8625e970894c5ac7420db820633817b17f493851c32af08274a7b247d5c4",
       "rule40.list": "362edd1f605742b360eaf138f151d7eea96cc17f20ef12da73acbfb80c350e08",
       "rule41.list": "cbc63e3daee0c0467558394ce0cfdd342f28e6c0f903bc4b35b6a5f06279d160",
       "rule42.list": "62b72d16b8f2bcbc80eb2c7af35dc03b31c4d82e732af6d227c2a311f04bdadc"
