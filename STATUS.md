@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| 最近巡检 | 2026-11-21 12:20 UTC |
+| 最近巡检 | 2026-11-22 12:23 UTC |
 | 巡检脚本 | `check.py` v1.0.0 |
 | 被引用规则集 | **43** 条 |
 | 不可达 | **0** 条 |
@@ -27,7 +27,7 @@
 | `💬 Ai平台` | `cainiao524/acl4ssr-ai/main/base/ai-priority.list` | 200 | 1.1 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list` | 200 | 1.2 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/UnBan.list` | 200 | 1.0 KB |
-| `🛑 广告拦截` | `ACL4SSR/ACL4SSR/master/Clash/BanAD.list` | 200 | 15.2 KB |
+| `🛑 广告拦截` | `ACL4SSR/ACL4SSR/master/Clash/BanAD.list` | 200 | 15.3 KB |
 | `🍃 应用净化` | `ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list` | 200 | 31.9 KB |
 | `📢 谷歌FCM` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list` | 200 | 1.6 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list` | 200 | 1.0 KB |
@@ -36,10 +36,10 @@
 | `Ⓜ️ 微软服务` | `ACL4SSR/ACL4SSR/master/Clash/Microsoft.list` | 200 | 2.3 KB |
 | `🍎 苹果服务` | `ACL4SSR/ACL4SSR/master/Clash/Apple.list` | 200 | 0.9 KB |
 | `📲 电报消息` | `ACL4SSR/ACL4SSR/master/Clash/Telegram.list` | 200 | 0.5 KB |
-| `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list` | 200 | 1.4 KB |
+| `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/AI.list` | 200 | 1.6 KB |
 | `💬 Ai平台` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/OpenAi.list` | 200 | 0.5 KB |
-| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/anthropic.list` | 200 | - |
-| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/openai.list` | 200 | - |
+| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/anthropic.list` | 200 | 1.6 KB |
+| `💬 Ai平台` | `jsdelivr:VPSDance/ai-proxy-rules@main/rules/surge/openai.list` | 200 | 1.7 KB |
 | `🎶 网易音乐` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/NetEaseMusic.list` | 200 | 1.3 KB |
 | `🎮 游戏下载` | `cainiao524/acl4ssr-steam/main/rules/GameDownload.list` | 200 | 2.7 KB |
 | `🎮 Steam 商店/社区` | `cainiao524/acl4ssr-steam/main/rules/GameSteamWeb.list` | 200 | 1.1 KB |
@@ -62,8 +62,8 @@
 | `📺 哔哩哔哩` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/BilibiliHMT.list` | 200 | 0.8 KB |
 | `📺 哔哩哔哩` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bilibili.list` | 200 | 0.6 KB |
 | `🌏 国内媒体` | `ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list` | 200 | 1.3 KB |
-| `🌍 国外媒体` | `ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list` | 200 | 11.2 KB |
-| `🚀 节点选择` | `ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list` | 200 | 186.6 KB |
+| `🌍 国外媒体` | `ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list` | 200 | 9.4 KB |
+| `🚀 节点选择` | `ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list` | 200 | 197.5 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list` | 200 | 16.8 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list` | 200 | 7.1 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/Download.list` | 200 | 0.9 KB |
