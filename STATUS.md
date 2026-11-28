@@ -11,7 +11,7 @@
 
 | | |
 |---|---|
-| 最近巡检 | 2026-11-27 13:37 UTC |
+| 最近巡检 | 2026-11-28 12:48 UTC |
 | 巡检脚本 | `check.py` v1.0.0 |
 | 被引用规则集 | **43** 条 |
 | 不可达 | **0** 条 |
@@ -27,7 +27,7 @@
 | `💬 Ai平台` | `cainiao524/acl4ssr-ai/main/base/ai-priority.list` | 200 | 1.1 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/LocalAreaNetwork.list` | 200 | 1.2 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/UnBan.list` | 200 | 1.0 KB |
-| `🛑 广告拦截` | `ACL4SSR/ACL4SSR/master/Clash/BanAD.list` | 200 | 15.3 KB |
+| `🛑 广告拦截` | `ACL4SSR/ACL4SSR/master/Clash/BanAD.list` | 200 | 15.2 KB |
 | `🍃 应用净化` | `ACL4SSR/ACL4SSR/master/Clash/BanProgramAD.list` | 200 | 31.9 KB |
 | `📢 谷歌FCM` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/GoogleFCM.list` | 200 | 1.6 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/GoogleCN.list` | 200 | 1.0 KB |
@@ -62,9 +62,9 @@
 | `📺 哔哩哔哩` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/BilibiliHMT.list` | 200 | 0.8 KB |
 | `📺 哔哩哔哩` | `ACL4SSR/ACL4SSR/master/Clash/Ruleset/Bilibili.list` | 200 | 0.6 KB |
 | `🌏 国内媒体` | `ACL4SSR/ACL4SSR/master/Clash/ChinaMedia.list` | 200 | 1.3 KB |
-| `🌍 国外媒体` | `ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list` | 200 | 9.4 KB |
+| `🌍 国外媒体` | `ACL4SSR/ACL4SSR/master/Clash/ProxyMedia.list` | 200 | 9.5 KB |
 | `🚀 节点选择` | `ACL4SSR/ACL4SSR/master/Clash/ProxyGFWlist.list` | 200 | 197.5 KB |
-| `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list` | 200 | 16.8 KB |
+| `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/ChinaDomain.list` | 200 | 17.1 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/ChinaCompanyIp.list` | 200 | 7.1 KB |
 | `🎯 全球直连` | `ACL4SSR/ACL4SSR/master/Clash/Download.list` | 200 | 0.9 KB |
 
