@@ -1,10 +1,10 @@
 # =============================================================================
 # mihomo 配置 · ACL4SSR 游戏分流增强（全内联）
 # 由 sb-oneclick-new/assets/acl4ssr_build.py v2.0.0 自动生成，请勿手改。
-# 生成时间(UTC): 2026-11-27T13:58:13Z
+# 生成时间(UTC): 2026-11-28T13:11:45Z
 # 规则来源 ini: https://raw.githubusercontent.com/cainiao524/acl4ssr-steam/main/ACL4SSR_Online_Full_GameControl_MultiMode.ini
 # ini sha256: dcde70207cdf461778d98d8a1fe1e6d5201237f2fa2ac3aa33edcc8460157216
-# 策略组 36 个 / 节点 2 个 / 规则 11303 条（规则与节点均为内联，无在线依赖）
+# 策略组 36 个 / 节点 2 个 / 规则 11314 条（规则与节点均为内联，无在线依赖）
 #
 # 三大坑处理说明：
 #   坑1 URL-REGEX 等旧版 Clash 类型：按 mihomo v1.19.x 类型白名单过滤，已丢弃 12 条
@@ -981,7 +981,6 @@ rules:
   - "DOMAIN-SUFFIX,switchadhub.com,🛑 广告拦截"
   - "DOMAIN-SUFFIX,sycbbs.com,🛑 广告拦截"
   - "DOMAIN-SUFFIX,synacast.com,🛑 广告拦截"
-  - "DOMAIN-SUFFIX,sysdig.com,🛑 广告拦截"
   - "DOMAIN-SUFFIX,talkingdata.com,🛑 广告拦截"
   - "DOMAIN-SUFFIX,talkingdata.net,🛑 广告拦截"
   - "DOMAIN-SUFFIX,tansuotv.com,🛑 广告拦截"
@@ -3683,6 +3682,7 @@ rules:
   - "DOMAIN-SUFFIX,qobuz.com,🌍 国外媒体"
   - "DOMAIN-SUFFIX,p-cdn.us,🌍 国外媒体"
   - "DOMAIN-SUFFIX,sndcdn.com,🌍 国外媒体"
+  - "DOMAIN-SUFFIX,soundcloud.cloud,🌍 国外媒体"
   - "DOMAIN-SUFFIX,soundcloud.com,🌍 国外媒体"
   - "DOMAIN-KEYWORD,-spotify-,🌍 国外媒体"
   - "DOMAIN-KEYWORD,spotify.com,🌍 国外媒体"
@@ -4020,6 +4020,7 @@ rules:
   - "DOMAIN-SUFFIX,ai-wen.net,🚀 节点选择"
   - "DOMAIN-SUFFIX,ai.dev,🚀 节点选择"
   - "DOMAIN-SUFFIX,ai.studio,🚀 节点选择"
+  - "DOMAIN-SUFFIX,aicu.cc,🚀 节点选择"
   - "DOMAIN-SUFFIX,aidc.com.tw,🚀 节点选择"
   - "DOMAIN-SUFFIX,aihub.top,🚀 节点选择"
   - "DOMAIN-SUFFIX,aiosearch.com,🚀 节点选择"
@@ -5155,6 +5156,7 @@ rules:
   - "DOMAIN-SUFFIX,dalianmeng.org,🚀 节点选择"
   - "DOMAIN-SUFFIX,daliulian.org,🚀 节点选择"
   - "DOMAIN-SUFFIX,danke4china.net,🚀 节点选择"
+  - "DOMAIN-SUFFIX,danmakus.com,🚀 节点选择"
   - "DOMAIN-SUFFIX,danwei.org,🚀 节点选择"
   - "DOMAIN-SUFFIX,daolan.net,🚀 节点选择"
   - "DOMAIN-SUFFIX,daozhongxing.org,🚀 节点选择"
@@ -9146,6 +9148,7 @@ rules:
   - "DOMAIN-SUFFIX,southnews.com.tw,🚀 节点选择"
   - "DOMAIN-SUFFIX,sowers.org.hk,🚀 节点选择"
   - "DOMAIN-SUFFIX,soylent.com,🚀 节点选择"
+  - "DOMAIN-SUFFIX,spacedesk.net,🚀 节点选择"
   - "DOMAIN-SUFFIX,spaceforce.mil,🚀 节点选择"
   - "DOMAIN-SUFFIX,spacex.com,🚀 节点选择"
   - "DOMAIN-SUFFIX,spankbang.com,🚀 节点选择"
@@ -11307,6 +11310,7 @@ rules:
   - "DOMAIN,wmsjsteam.com,🎯 全球直连"
   - "DOMAIN,dl.steam.clngaa.com,🎯 全球直连"
   - "DOMAIN,dl.steam.ksyna.com,🎯 全球直连"
+  - "DOMAIN,gstore.val.manlaxy.com,🎯 全球直连"
   - "DOMAIN,st.dl.bscstorage.net,🎯 全球直连"
   - "DOMAIN,st.dl.eccdnx.com,🎯 全球直连"
   - "DOMAIN,st.dl.pinyuncloud.com,🎯 全球直连"
@@ -11315,6 +11319,7 @@ rules:
   - "DOMAIN,steampowered.com.8686c.com,🎯 全球直连"
   - "DOMAIN,steamstatic.com.8686c.com,🎯 全球直连"
   - "DOMAIN-SUFFIX,foxmail.com,🎯 全球直连"
+  - "DOMAIN-SUFFIX,gcloudsvcs.com,🎯 全球直连"
   - "DOMAIN-SUFFIX,gtimg.com,🎯 全球直连"
   - "DOMAIN-SUFFIX,idqqimg.com,🎯 全球直连"
   - "DOMAIN-SUFFIX,igamecj.com,🎯 全球直连"
@@ -11624,6 +11629,12 @@ rules:
   - "DOMAIN-SUFFIX,zhuihd.com,🎯 全球直连"
   - "DOMAIN-SUFFIX,cmbchina.com,🎯 全球直连"
   - "DOMAIN-SUFFIX,95516.com,🎯 全球直连"
+  - "DOMAIN,cn.download.nvidia.com,🎯 全球直连"
+  - "DOMAIN-SUFFIX,made-in-china.com,🎯 全球直连"
+  - "DOMAIN-SUFFIX,micstatic.com,🎯 全球直连"
+  - "DOMAIN-SUFFIX,focuschina.com,🎯 全球直连"
+  - "DOMAIN-SUFFIX,vemic.com,🎯 全球直连"
+  - "DOMAIN-SUFFIX,trademessenger.com,🎯 全球直连"
   - "IP-CIDR,8.128.0.0/10,🎯 全球直连,no-resolve"
   - "IP-CIDR,8.209.32.0/22,🎯 全球直连,no-resolve"
   - "IP-CIDR,8.209.40.0/21,🎯 全球直连,no-resolve"
